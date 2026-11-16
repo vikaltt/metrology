@@ -112,9 +112,25 @@
     if (url.origin !== window.location.origin || url.pathname !== window.location.pathname || url.search !== window.location.search) return;
     if (revealFragment(url.hash, true) && url.hash === window.location.hash) event.preventDefault();
   });
-  revealFragment(window.location.hash);
-  // Images and other local resources may move the target after the first layout.
-  window.addEventListener('load', () => revealFragment(window.location.hash), { once: true });
+  let reloading = false;
+  try {
+    const timing = window.performance;
+    const navigation = timing && timing.getEntriesByType && timing.getEntriesByType('navigation')[0];
+    reloading = navigation ? navigation.type === 'reload' : !!(timing && timing.navigation && timing.navigation.type === 1);
+  } catch (_) { /* Fragment links remain usable without navigation timing. */ }
+  if (reloading) {
+    // A saved fragment is not a new request to expand an explanation on refresh.
+    let target = null;
+    try { target = document.getElementById(decodeURIComponent(window.location.hash.slice(1))); }
+    catch (_) { /* Ignore malformed fragments. */ }
+    for (let element = target; element; element = element.parentElement) {
+      if (element.tagName === 'DETAILS') element.open = false;
+    }
+  } else {
+    revealFragment(window.location.hash);
+    // Local resources may move the target after the first layout.
+    window.addEventListener('load', () => revealFragment(window.location.hash), { once: true });
+  }
   const toggle = document.querySelector('.menu-toggle');
   if (toggle && nav) {
     const narrow = window.matchMedia('(max-width: 760px)');
