@@ -25,6 +25,18 @@
 
 .page-contents{border:1px solid var(--line);background:var(--surface);border-radius:var(--radius);padding:18px 24px;margin-bottom:32px;font-size:14px}.page-contents>p,.page-contents>h2{font-size:1rem;line-height:1.5;font-weight:650;margin:0 0 8px}.page-contents :is(ol,ul){padding-inline-start:26px;margin:0;list-style-position:outside}.page-contents li{margin:.4rem 0;padding:0}.page-contents li::marker{font-variant-numeric:tabular-nums}.chapter p:has(> .formula){max-width:100%;overflow-x:auto}.chapter p>.formula{display:inline-block;max-width:100%;vertical-align:middle}.chapter{overflow-wrap:anywhere}@media print{.page-contents{display:none}}
 
+/* Translation links remain readable next to compact source references. */
+.source-translation{font-size:0}
+.source-translation>a{display:inline-block;max-width:100%;min-height:44px;margin:.3rem 0;padding:.45rem .75rem;border:1px solid #87afa2;border-radius:7px;background:#e2f0e8;color:#124e46;font-size:.95rem;font-weight:650;line-height:1.5;white-space:normal;overflow-wrap:anywhere;vertical-align:middle;text-decoration:underline}
+.source-translation>a:hover{background:#cee5d8;color:#103f39;border-color:var(--accent)}
+.translation-access{margin:1.2rem 0 .5rem}
+.translation-access .source-translation>a{margin-inline:0;background:var(--accent);border-color:var(--accent);color:#fff}
+.translation-access .source-translation>a:hover{background:#0f514a}
+details[id]{scroll-margin-top:110px}
+details[id]:target{border-color:var(--accent)}
+@media(max-width:760px){details[id]{scroll-margin-top:94px}.source-translation>a{padding:.5rem .65rem}}
+@media print{.source-translation>a{min-height:0;padding:0;border:0;background:transparent!important;color:inherit!important}}
+
 /* Figures and their captions form one compact reading unit. */
 .chapter .book-figure{max-width:100%;min-width:0;margin:1.6rem 0;text-align:center;break-inside:avoid}
 .chapter .book-figure img{display:block;width:min(100%,var(--figure-intrinsic-width));height:auto;max-width:min(100%,660px);max-height:min(430px,calc(100svh - 250px));object-fit:contain;margin:0 auto}

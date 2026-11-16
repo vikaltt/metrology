@@ -68,6 +68,53 @@
       else main.prepend(contents);
     }
   }
+  // Fragment navigation must also reveal content inside collapsed disclosures.
+  let fragmentScroll = 0;
+  const revealFragment = (hash, focus = false) => {
+    // A later navigation, including an ordinary fragment, cancels a pending scroll.
+    const request = ++fragmentScroll;
+    if (!hash || hash === '#') return false;
+    let id;
+    try { id = decodeURIComponent(hash.slice(1)); }
+    catch (_) { return false; }
+    const target = document.getElementById(id);
+    if (!target) return false;
+    const disclosures = [];
+    for (let element = target; element; element = element.parentElement) {
+      if (element.tagName === 'DETAILS') disclosures.push(element);
+    }
+    if (!disclosures.length) return false;
+    disclosures.reverse().forEach(details => { details.open = true; });
+    if (focus) {
+      const destination = target.tagName === 'DETAILS' ? target.querySelector('summary') : target;
+      if (destination) {
+        const temporaryTabindex = !destination.hasAttribute('tabindex') && destination.tabIndex < 0;
+        if (temporaryTabindex) {
+          destination.setAttribute('tabindex', '-1');
+          destination.addEventListener('blur', () => destination.removeAttribute('tabindex'), { once: true });
+        }
+        destination.focus({ preventScroll: true });
+      }
+    }
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      if (request !== fragmentScroll) return;
+      const offset = (header ? header.getBoundingClientRect().height : 0) + 16;
+      window.scrollTo({ top: Math.max(0, window.scrollY + target.getBoundingClientRect().top - offset), behavior: 'instant' });
+    }));
+    return true;
+  };
+  window.addEventListener('hashchange', () => revealFragment(window.location.hash));
+  document.addEventListener('click', event => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const link = event.target.closest('a[href]');
+    if (!link || link.hasAttribute('download') || (link.target && link.target !== '_self')) return;
+    const url = new URL(link.href, window.location.href);
+    if (url.origin !== window.location.origin || url.pathname !== window.location.pathname || url.search !== window.location.search) return;
+    if (revealFragment(url.hash, true) && url.hash === window.location.hash) event.preventDefault();
+  });
+  revealFragment(window.location.hash);
+  // Images and other local resources may move the target after the first layout.
+  window.addEventListener('load', () => revealFragment(window.location.hash), { once: true });
   const toggle = document.querySelector('.menu-toggle');
   if (toggle && nav) {
     const narrow = window.matchMedia('(max-width: 760px)');
