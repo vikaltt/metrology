@@ -68,6 +68,40 @@
       else main.prepend(contents);
     }
   }
+  // Carry an explicit lecture origin across material pages, including new tabs and file://.
+  const siteRoot = new URL(prefix || './', window.location.href);
+  const validOrigin = value => typeof value === 'string' && /^chapters\/(?:0[0-9]|1[01])\.html(?:#[A-Za-z][A-Za-z0-9_.:-]{0,127})?$/.test(value) ? value : '';
+  const materialPage = window.location.pathname.startsWith(`${siteRoot.pathname}materials/`);
+  let lectureOrigin = materialPage ? validOrigin(new URL(window.location.href).searchParams.get('from')) : '';
+  const returnLinks = Array.from(document.querySelectorAll('a.material-return'));
+  if (materialPage && !lectureOrigin && returnLinks.length) {
+    const fallback = new URL(returnLinks[0].href, window.location.href);
+    if (fallback.origin === siteRoot.origin && fallback.pathname.startsWith(siteRoot.pathname)) {
+      lectureOrigin = validOrigin(fallback.pathname.slice(siteRoot.pathname.length) + fallback.hash);
+    }
+  }
+  if (materialPage && lectureOrigin) {
+    returnLinks.forEach(link => { link.href = new URL(lectureOrigin, siteRoot).href; });
+  }
+  let materialLinkNumber = 0;
+  document.querySelectorAll('a[href]').forEach(link => {
+    const url = new URL(link.href, window.location.href);
+    if (url.origin !== siteRoot.origin || !url.pathname.startsWith(`${siteRoot.pathname}materials/`) || !url.pathname.endsWith('.html')) return;
+    let origin = materialPage ? lectureOrigin : '';
+    if (/^(?:0[0-9]|1[01])$/.test(current)) {
+      materialLinkNumber++;
+      if (!link.id) {
+        let id = `material-link-${materialLinkNumber}`;
+        while (document.getElementById(id)) id += '-return';
+        link.id = id;
+      }
+      link.setAttribute('data-material-origin', 'true');
+      origin = validOrigin(`chapters/${current}.html#${link.id}`) || `chapters/${current}.html`;
+    }
+    if (origin) url.searchParams.set('from', origin);
+    else url.searchParams.delete('from');
+    link.href = url.href;
+  });
   // Fragment navigation must also reveal content inside collapsed disclosures.
   let fragmentScroll = 0;
   const revealFragment = (hash, focus = false) => {
@@ -83,7 +117,7 @@
     for (let element = target; element; element = element.parentElement) {
       if (element.tagName === 'DETAILS') disclosures.push(element);
     }
-    if (!disclosures.length) return false;
+    if (!disclosures.length && !target.hasAttribute('data-material-origin')) return false;
     disclosures.reverse().forEach(details => { details.open = true; });
     if (focus) {
       const destination = target.tagName === 'DETAILS' ? target.querySelector('summary') : target;

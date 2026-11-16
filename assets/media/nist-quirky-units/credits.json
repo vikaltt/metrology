@@ -1,0 +1,67 @@
+{
+  "article_url": "https://www.nist.gov/blogs/taking-measure/noggin-butt-quirky-measurement-units-throughout-human-history",
+  "article_author": "Ben P. Stein",
+  "illustrations": [
+    {
+      "file": "skor.webp",
+      "source_url": "https://www.nist.gov/sites/default/files/styles/1400_x_1400_limit/public/images/2022/03/09/QuirkyMeasurements_Hero%20Image_960x600.png.webp?itok=NZQ7I5tr",
+      "source_alt": "Illustration shows the word \"SKOR\" with a horned helmet, a stick and pastures with sheep. ",
+      "width": 1400,
+      "height": 875,
+      "frames": 1,
+      "format": "WEBP",
+      "bytes": 28186,
+      "sha256": "2077b7dc4662ffb6bf2c83951fc302093e2cc09426bade3f5633c79dfee82982",
+      "credit": "B. Hayes/NIST"
+    },
+    {
+      "file": "cubit.gif",
+      "source_url": "https://www.nist.gov/sites/default/files/images/2022/03/10/Cubit_Animation.gif",
+      "source_alt": "Animation illustration shows Egyptian with arm as a unit of measurement. ",
+      "width": 480,
+      "height": 300,
+      "frames": 47,
+      "format": "GIF",
+      "bytes": 655307,
+      "sha256": "4b19fff93761deb36707daf588e116e5b01f4ead7c545ec606d20b327bdaedb6",
+      "credit": "B. Hayes/NIST"
+    },
+    {
+      "file": "batman.gif",
+      "source_url": "https://www.nist.gov/sites/default/files/images/2022/03/10/Batman_Animation.gif",
+      "source_alt": "Animated illustration shows two people, one lifting a bat shape and the other holding a scale. ",
+      "width": 480,
+      "height": 300,
+      "frames": 44,
+      "format": "GIF",
+      "bytes": 671175,
+      "sha256": "6a518c288cea50dfe5f04f18dca1cff58d0ee6c1cd38041e70a57d7faa42bf7b",
+      "credit": "B. Hayes/NIST"
+    },
+    {
+      "file": "hogshead.gif",
+      "source_url": "https://www.nist.gov/sites/default/files/images/2022/03/10/Hogshead_Animation.gif",
+      "source_alt": "Animated illustration shows person holding glass with hog head appearing from it.",
+      "width": 480,
+      "height": 300,
+      "frames": 66,
+      "format": "GIF",
+      "bytes": 125590,
+      "sha256": "329e6d1dbb813219edf94e95042e576dfdcedfe97485375b6252e83dbb39e199",
+      "credit": "B. Hayes/NIST"
+    },
+    {
+      "file": "airwatt.gif",
+      "source_url": "https://www.nist.gov/sites/default/files/images/2022/03/10/AirwattAnimation.gif",
+      "source_alt": "Animated illustration shows a person vacuuming while playing air guitar.",
+      "width": 480,
+      "height": 300,
+      "frames": 18,
+      "format": "GIF",
+      "bytes": 78609,
+      "sha256": "485bf73890f14b4a9d6e0315623875cc4e6f8f9f1d203580254ad4a39f549e52",
+      "credit": "B. Hayes/NIST"
+    }
+  ],
+  "reuse_notice": "Reprinted courtesy of the National Institute of Standards and Technology, U.S. Department of Commerce."
+}
