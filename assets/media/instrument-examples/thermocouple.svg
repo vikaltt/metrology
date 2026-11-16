@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 225" role="img" aria-labelledby="t">
+<title id="t">Термопара: два разнородных проводника, измерительный спай и сравнительные соединения</title>
+<rect width="360" height="225" fill="#fff"/>
+<path d="M65 100V58H250V83" stroke="#a05c21" stroke-width="5" fill="none"/>
+<path d="M65 100V143H250V117" stroke="#326a59" stroke-width="5" fill="none"/>
+<circle cx="65" cy="100" r="7" fill="#a05c21"/>
+<rect x="227" y="83" width="46" height="34" rx="4" fill="#e3eee8" stroke="#244b3e" stroke-width="2"/>
+<g fill="none" stroke="#638677" stroke-width="1.8">
+<path id="measuring-junction-leader" d="M32 182H22V100H58"/>
+<path id="reference-junction-leaders" d="M310 48V135 M310 61L250 83 M310 135L250 117"/>
+</g>
+<g fill="#244b3e"><circle cx="250" cy="83" r="4"/><circle cx="250" cy="117" r="4"/></g>
+<g font-family="system-ui,sans-serif" fill="#203a32" text-anchor="middle" font-size="18">
+<text x="250" y="107">мВ</text><text x="128" y="43">Проводник A</text><text x="165" y="167">Проводник B</text>
+<text x="135" y="191">Измерительный спай</text><text x="271" y="20">Сравнительные</text><text x="271" y="41">соединения</text><text x="180" y="217">Температура → термоЭДС</text>
+</g></svg>

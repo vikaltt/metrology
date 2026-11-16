@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 900" role="img" aria-labelledby="scheme-title scheme-desc">
+<title id="scheme-title">Государственная поверочная схема</title>
+<desc id="scheme-desc">Центральная цепь: государственный первичный эталон, эталоны-копии, эталоны первого, второго, третьего и четвёртого разрядов. От эталонов-копий единицу передают рабочим средствам измерений наивысшей точности, от первого разряда — высшей, от второго — высокой, от третьего — средней, от четвёртого — низкой точности. Стрелки показывают передачу размера единицы.</desc>
+<defs><marker id="scheme-arrow" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0L10 4L0 8Z" fill="#244b3e"/></marker></defs>
+<rect width="1000" height="900" fill="#fff"/>
+<g fill="none" stroke="#244b3e" stroke-width="2.5" stroke-linejoin="round" marker-end="url(#scheme-arrow)">
+<path data-edge-from="primary" data-edge-to="copies" d="M530 80V130"/>
+<path data-edge-from="copies" data-edge-to="rank1" d="M530 184V240"/>
+<path data-edge-from="rank1" data-edge-to="rank2" d="M530 294V350"/>
+<path data-edge-from="rank2" data-edge-to="rank3" d="M530 404V460"/>
+<path data-edge-from="rank3" data-edge-to="rank4" d="M530 514V570"/>
+<path data-edge-from="copies" data-edge-to="work1" d="M530 184V210H180V660"/>
+<path data-edge-from="rank1" data-edge-to="work2" d="M530 294V320H880V660"/>
+<path data-edge-from="rank2" data-edge-to="work3" d="M530 404V430H310V825H290"/>
+<path data-edge-from="rank3" data-edge-to="work4" d="M530 514V540H750V825H770"/>
+<path data-edge-from="rank4" data-edge-to="work5" d="M530 624V795"/>
+</g>
+<g fill="#244b3e"><circle cx="530" cy="210" r="4"/><circle cx="530" cy="320" r="4"/><circle cx="530" cy="430" r="4"/><circle cx="530" cy="540" r="4"/></g>
+<g font-family="system-ui,sans-serif" fill="#203a32" font-size="24" text-anchor="middle">
+<g data-rd-node="primary"><rect x="265" y="20" width="530" height="60" fill="#dbe8e1" stroke="#244b3e" stroke-width="2.5"/><text x="530" y="58">Государственный первичный эталон</text></g>
+<g data-rd-node="copies"><rect x="320" y="130" width="420" height="54" fill="#e3eee8" stroke="#244b3e" stroke-width="2.5"/><text x="530" y="165">Эталоны-копии</text></g>
+<g data-rd-node="rank1"><rect x="320" y="240" width="420" height="54" fill="#e3eee8" stroke="#244b3e" stroke-width="2.5"/><text x="530" y="275">Эталоны 1-го разряда</text></g>
+<g data-rd-node="rank2"><rect x="320" y="350" width="420" height="54" fill="#e3eee8" stroke="#244b3e" stroke-width="2.5"/><text x="530" y="385">Эталоны 2-го разряда</text></g>
+<g data-rd-node="rank3"><rect x="320" y="460" width="420" height="54" fill="#e3eee8" stroke="#244b3e" stroke-width="2.5"/><text x="530" y="495">Эталоны 3-го разряда</text></g>
+<g data-rd-node="rank4"><rect x="320" y="570" width="420" height="54" fill="#e3eee8" stroke="#244b3e" stroke-width="2.5"/><text x="530" y="605">Эталоны 4-го разряда</text></g>
+<g data-rd-node="work1"><rect x="70" y="660" width="220" height="80" fill="#fff1dc" stroke="#244b3e" stroke-width="2.5"/><text x="180" y="692">Наивысшей</text><text x="180" y="724">точности</text></g>
+<g data-rd-node="work2"><rect x="770" y="660" width="220" height="80" fill="#fff1dc" stroke="#244b3e" stroke-width="2.5"/><text x="880" y="692">Высшей</text><text x="880" y="724">точности</text></g>
+<g data-rd-node="work3"><rect x="70" y="785" width="220" height="80" fill="#fff1dc" stroke="#244b3e" stroke-width="2.5"/><text x="180" y="817">Высокой</text><text x="180" y="849">точности</text></g>
+<g data-rd-node="work4"><rect x="770" y="785" width="220" height="80" fill="#fff1dc" stroke="#244b3e" stroke-width="2.5"/><text x="880" y="817">Средней</text><text x="880" y="849">точности</text></g>
+<g data-rd-node="work5"><rect x="400" y="795" width="260" height="60" fill="#fff1dc" stroke="#244b3e" stroke-width="2.5"/><text x="530" y="833">Низкой точности</text></g>
+</g>
+<g font-family="system-ui,sans-serif" font-size="22" fill="#203a32">
+<text x="550" y="112">Метод передачи</text>
+<text x="550" y="226">Метод передачи</text>
+<text x="510" y="338" text-anchor="end">Метод передачи</text>
+<text x="550" y="446">Метод передачи</text>
+<text x="510" y="558" text-anchor="end">Метод передачи</text>
+<text x="550" y="711">Метод передачи</text>
+<text x="150" y="470" transform="rotate(-90 150 470)" text-anchor="middle">Метод передачи</text>
+<text x="910" y="490" transform="rotate(-90 910 490)" text-anchor="middle">Метод передачи</text>
+<text x="290" y="550" transform="rotate(-90 290 550)" text-anchor="middle">Метод передачи</text>
+<text x="780" y="550" transform="rotate(-90 780 550)" text-anchor="middle">Метод передачи</text>
+</g>
+<path d="M60 20H50Q40 20 40 30V614Q40 624 60 624M60 650H50Q40 650 40 660V860Q40 870 60 870" fill="none" stroke="#638677" stroke-width="2"/>
+<g font-family="system-ui,sans-serif" font-size="24" font-weight="600" fill="#244b3e" text-anchor="middle"><text x="24" y="325" transform="rotate(-90 24 325)">Эталонные средства</text><text x="24" y="760" transform="rotate(-90 24 760)">Рабочие СИ</text></g>
+</svg>

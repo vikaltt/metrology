@@ -1,0 +1,5 @@
+.traceability-example{box-sizing:border-box;width:100%;max-width:440px;margin:.8rem 0 1.1rem;padding:.6rem;border:1px solid #b8cdc5;border-radius:8px;background:#f4f8f5;color:#203a32;break-inside:avoid}
+.traceability-example img{display:block;width:100%;height:auto;max-height:320px;object-fit:contain;background:#fff;border-radius:4px}
+.traceability-example.traceability-chain img{max-height:340px}
+.traceability-example figcaption{margin:.55rem 0 0;font-size:.94rem;line-height:1.5;color:#203a32}
+@media(max-width:600px){.traceability-example{padding:.4rem}.traceability-example figcaption{font-size:.9rem}}

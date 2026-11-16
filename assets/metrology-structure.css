@@ -1,0 +1,122 @@
+/* Figure 1: source hierarchy expressed as selectable text and nested lists. */
+.metrology-structure {
+  --ms-line: #a7bdb1;
+  margin: 2rem 0 2.5rem;
+  padding: clamp(1rem, 2.5vw, 1.5rem);
+  border: 1px solid var(--line, #d5dfd7);
+  border-radius: var(--radius, 12px);
+  background: var(--surface, #fff);
+  color: var(--ink, #243b35);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+.metrology-structure .ms-tree,
+.metrology-structure li,
+.metrology-structure .ms-node { min-width: 0; }
+.metrology-structure .ms-node {
+  position: relative;
+  padding: .7rem .85rem;
+  border: 1px solid var(--line, #d5dfd7);
+  border-radius: 8px;
+  background: var(--paper, #f6f7f1);
+  overflow-wrap: anywhere;
+}
+.metrology-structure .ms-root {
+  margin: 0 0 1.25rem;
+  padding: .9rem 1rem;
+  color: #fff;
+  background: var(--accent, #1a6758);
+  border-color: var(--accent, #1a6758);
+  font-weight: 700;
+  font-size: 1.12em;
+}
+.metrology-structure .ms-root::after {
+  content: "";
+  position: absolute;
+  left: .85rem;
+  top: 100%;
+  height: 1.25rem;
+  border-left: 1px solid var(--ms-line);
+}
+.metrology-structure ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 1.1rem;
+  border-left: 1px solid var(--ms-line);
+}
+.metrology-structure .ms-branches { margin-left: .85rem; }
+.metrology-structure li {
+  position: relative;
+  margin: 0;
+  padding: 0 0 .7rem;
+}
+.metrology-structure li::before {
+  content: "";
+  position: absolute;
+  left: -1.1rem;
+  top: 1.4rem;
+  width: 1.1rem;
+  border-top: 1px solid var(--ms-line);
+}
+.metrology-structure li:last-child { padding-bottom: 0; }
+.metrology-structure .ms-branches > li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr);
+  align-items: start;
+  gap: 1.1rem;
+  padding-bottom: 1.5rem;
+}
+.metrology-structure .ms-branches > li:last-child { padding-bottom: 0; }
+.metrology-structure .ms-branch {
+  font-weight: 650;
+  background: var(--soft, #edf3eb);
+  color: var(--accent, #1a6758);
+}
+.metrology-structure .ms-branch::after {
+  content: "";
+  position: absolute;
+  top: 1.4rem;
+  left: 100%;
+  width: 1.1rem;
+  border-top: 1px solid var(--ms-line);
+}
+.metrology-structure .ms-detail {
+  display: block;
+  margin-top: .3rem;
+  color: var(--ink, #243b35);
+  font-weight: 400;
+}
+.metrology-structure .ms-subbranch {
+  background: var(--soft, #edf3eb);
+  font-weight: 600;
+}
+.metrology-structure li > ul > li > ul {
+  margin: .7rem 0 0 .8rem;
+}
+.metrology-structure figcaption {
+  margin: 1.25rem 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line, #d5dfd7);
+  color: var(--muted, #53675e);
+  font-size: .9em;
+  line-height: 1.5;
+}
+@media (max-width: 640px) {
+  .metrology-structure { padding: 1rem .75rem; }
+  .metrology-structure .ms-branches > li { display: block; }
+  .metrology-structure .ms-branches > li > ul {
+    margin: .7rem 0 0 .65rem;
+    padding-left: .85rem;
+  }
+  .metrology-structure .ms-branches > li > ul > li::before {
+    left: -.85rem;
+    width: .85rem;
+  }
+  .metrology-structure .ms-branch::after { display: none; }
+  .metrology-structure .ms-node { padding: .65rem .7rem; }
+}
+@media print {
+  .metrology-structure { font-size: 10pt; }
+  .metrology-structure .ms-root { color: #000; background: #eef3ef; }
+  .metrology-structure li { break-inside: avoid; }
+}

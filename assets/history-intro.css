@@ -1,0 +1,37 @@
+/* Локальные дополнения к общему оформлению лекционных демонстраций. */
+.chapter ol.history-timeline{list-style:none;padding:0;margin:1.5rem 0;border-left:3px solid var(--line)}
+.history-timeline>li{position:relative;margin:0;padding:.5rem 0 1rem 1.5rem}
+.history-timeline>li::before{content:none}
+.history-timeline strong{color:var(--accent)}
+.history-controls{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0}
+.history-controls label{display:block;font-weight:600}
+.history-controls input[type=range]{display:block;width:100%;min-height:44px;margin:.3rem 0;accent-color:var(--accent)}
+.history-demo output{font-variant-numeric:tabular-nums}
+.history-meter-buttons{display:flex;flex-wrap:wrap;gap:.6rem;margin:1rem 0}
+.history-meter-buttons button{min-height:44px;border:1px solid #638677;border-radius:5px;background:white;color:#203a32;padding:.5rem .7rem;text-align:left;font:inherit}
+.history-meter-buttons button[aria-pressed=true]{background:#326a59;color:white}
+.history-demo .history-fineprint{font-size:.9rem;color:var(--muted)}
+.history-demo .history-bridge{max-width:600px;overflow:hidden;background:#eef3ef;border:1px solid var(--line);border-radius:6px}
+.history-demo .history-meter-picture{width:100%;max-width:720px;height:auto;margin:.5rem auto;background:#fffefa;border:1px solid var(--line);border-radius:8px}
+.history-meter-demo .meter-material{display:flex;flex-wrap:wrap;align-items:baseline;gap:.3rem 1rem;border-bottom:1px solid var(--line);padding:.6rem 0;margin-top:1.3rem}
+.meter-material strong{font-size:1.1rem;color:#285b4a}.meter-material span{font-size:1rem;color:var(--muted)}
+.history-meter-demo .meter-object{margin:1rem 0}.history-meter-demo figcaption{font-size:16px;line-height:1.55;color:#3d5850;margin:.7rem 0}
+.meter-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin:1rem 0}
+.history-meter-demo .meter-detail{margin:0;min-width:0;padding:.7rem;border:1px solid var(--line);border-radius:8px;background:#fffefa}
+.history-meter-demo .meter-detail svg{width:100%;max-width:280px;height:auto;margin:0 auto;overflow:hidden}
+.meter-readout{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem;margin:1rem 0}
+.meter-readout p{margin:0;padding:.8rem 1rem;border:1px solid #d9c29a;border-radius:7px;background:#fff5e4;min-width:0}
+.meter-readout strong,.meter-readout span{display:block}.meter-readout span{font-size:1.13rem;margin-top:.3rem;font-variant-numeric:tabular-nums}
+.meter-digital{display:grid;gap:.3rem;margin:1rem 0;padding:1rem 1.2rem;border:1px solid #617c75;border-radius:8px;background:#243e3b;color:#e4f4eb;font-variant-numeric:tabular-nums}
+.meter-digital span{font-size:1rem}.meter-digital strong,.meter-digital output{display:block;font-family:Consolas,"Courier New",monospace;font-size:clamp(1.05rem,2.4vw,1.35rem);line-height:1.5;overflow-wrap:normal}
+.history-meter-demo svg .meter-device-display{font:26px Consolas,"Courier New",monospace;fill:#c9ecd0;letter-spacing:0}
+.history-meter-demo svg .meter-device-unit{font:15px "Segoe UI",Arial,sans-serif;fill:#c9ecd0}
+@media(max-width:540px){.meter-detail-grid,.meter-readout{grid-template-columns:minmax(0,1fr)}.history-meter-demo .meter-material{display:grid}.history-meter-demo figcaption{font-size:16px}.meter-digital{padding:.8rem}.meter-readout p{padding:.7rem}.history-meter-demo .meter-object{margin:.8rem 0}}
+@media print{.history-meter-demo .history-meter-picture{max-height:7cm;print-color-adjust:exact}.history-meter-demo .meter-detail svg{max-height:4cm}.history-meter-demo .meter-digital{background:white;color:black;border-color:#777}.meter-detail-grid{grid-template-columns:1fr 1fr}.history-meter-demo .meter-object,.meter-detail,.meter-readout,.meter-digital{break-inside:avoid}}
+.history-readings{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}
+.history-readings p{padding:.6rem .8rem;border:1px solid var(--line);border-radius:5px;background:var(--surface)}
+.chapter .history-legend{list-style:none;padding:0;margin:.7rem 0;font-size:16px;line-height:1.5}
+.chapter .history-legend li{display:flex;align-items:center;gap:.5rem;margin:.4rem 0}
+.history-key{width:24px;height:8px;flex:0 0 24px;border-radius:2px}.history-key-a{background:#147d91}.history-key-b{background:#b57b28}
+@media(max-width:540px){.history-controls,.history-readings{grid-template-columns:minmax(0,1fr);gap:.3rem}.history-meter-buttons{display:grid;grid-template-columns:minmax(0,1fr)}.history-meter-buttons button{width:100%}.history-timeline>li{padding-left:1rem}}
+@media print{.history-controls,.history-meter-buttons{display:none}.history-meter-panel[hidden]{display:block!important}.history-meter-panel::before{content:attr(data-print-title);display:block;font-weight:bold}.history-meter-panel{margin:10pt 0;break-inside:avoid}.history-timeline>li{break-inside:avoid}.history-readings{grid-template-columns:1fr 1fr}.history-demo svg{max-height:6cm}.history-key{print-color-adjust:exact}}

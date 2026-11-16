@@ -1,0 +1,6 @@
+#fig-17 .verification-diagram{box-sizing:border-box;width:100%;max-width:760px;margin:0 auto;padding:.5rem;border:1px solid #b8cdc5;border-radius:6px;background:#fff}
+#fig-17 .verification-diagram img{display:block;width:100%;min-width:0;max-width:740px;height:auto;max-height:none;margin:0 auto}
+#fig-18 .rd-panels{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.6rem}
+#fig-18 .rd-panel svg{width:100%;max-width:190px;height:auto}
+@media(max-width:760px){#fig-18 .rd-panels{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media print{#fig-18 .rd-panels{grid-template-columns:repeat(2,minmax(0,1fr))}}
