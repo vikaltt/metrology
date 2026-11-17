@@ -1,0 +1,2586 @@
+<!DOCTYPE html>
+<html lang="ru" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Электронно-лучевой осциллограф (ЭЛО) и ЭЛТ — Интерактивный стенд</title>
+    <style id='offline-styles'>
+        body {
+            background-color: #05080d;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        /* Компактные ползунки, встроенные прямо в реостаты на схеме */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            height: 16px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 4px;
+            border-radius: 999px;
+            background: #1e293b;
+            border: 1px solid #475569;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #10b981;
+            border: 2px solid #ecfdf5;
+            margin-top: -5px;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.85);
+            transition: transform 0.12s ease, background-color 0.12s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.22);
+            background: #34d399;
+        }
+        input[type=range].slider-amber::-webkit-slider-thumb {
+            background: #f59e0b;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.85);
+        }
+        input[type=range].slider-sky::-webkit-slider-thumb {
+            background: #38bdf8;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.85);
+        }
+        input[type=range].slider-cyan::-webkit-slider-thumb {
+            background: #06b6d4;
+            box-shadow: 0 0 8px rgba(6, 182, 212, 0.85);
+        }
+        input[type=range].slider-purple::-webkit-slider-thumb {
+            background: #c084fc;
+            box-shadow: 0 0 8px rgba(192, 132, 252, 0.85);
+        }
+
+        /* Интерактивные блоки функциональной схемы */
+        .schema-node {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .schema-node:hover rect.node-box,
+        .schema-node:hover path.node-box {
+            stroke: #00ff9d !important;
+            stroke-width: 2.4px !important;
+            filter: drop-shadow(0 0 8px rgba(0, 255, 157, 0.35));
+        }
+        .schema-node.active-node rect.node-box,
+        .schema-node.active-node path.node-box {
+            stroke: #00ff9d !important;
+            stroke-width: 2.8px !important;
+            fill: rgba(0, 255, 157, 0.11) !important;
+            filter: drop-shadow(0 0 14px rgba(0, 255, 157, 0.55));
+        }
+
+        @keyframes signalFlow {
+            to { stroke-dashoffset: -24; }
+        }
+        .signal-wire-active {
+            stroke-dasharray: 6 6;
+            animation: signalFlow 0.8s linear infinite;
+        }
+
+        /* Оверлей-виджеты реостатов на схеме */
+        .rheostat-widget {
+            background: rgba(9, 14, 24, 0.92);
+            border: 1px solid rgba(71, 85, 105, 0.75);
+            border-radius: 8px;
+            padding: 3px 7px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            user-select: none;
+        }
+        .rheostat-widget:hover {
+            border-color: #10b981;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #070b11; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Читаемая схема без изменения состава блоков из методички. */
+        header { position: relative !important; }
+        header h1 { font-size: 18px !important; line-height: 1.35; }
+        header p { font-size: 13px !important; }
+        header button { min-height: 34px; font-size: 13px !important; }
+        button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+            outline: 3px solid #fbbf24; outline-offset: 3px;
+        }
+        #eloUnifiedSvg text { font-size: 13px; }
+        #eloUnifiedSvg text[font-size="13"], #eloUnifiedSvg text[font-size="14"] { font-size: 14px; }
+        #svg3dDeflectionText { font-size: 12px !important; }
+        #eloUnifiedSvg text[font-size="15"] { font-size: 16px; }
+        #eloUnifiedSvg .rheostat-widget { font-size: 12px; }
+        .rheostat-widget > div:first-child { font-size: 12px; line-height: 1.15; white-space: nowrap; }
+        .rheostat-widget { padding: 3px 6px; }
+        #eloUnifiedSvg button { min-height: 18px; }
+        #eloUnifiedSvg .vdiv-btn, #eloUnifiedSvg .tdiv-btn { font-size: 10px; }
+        #eloUnifiedSvg input[type=range] { min-width: 0; flex-shrink: 1; }
+        #sigAmpLabel, #sigDcLabel, #sigFreqLabel { flex-shrink: 0; width: 58px; }
+        .stand-toolbar { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding: 10px 12px; background: #0b121e; border: 1px solid #334155; border-radius: 12px; }
+        .view-control { width: 260px; max-width: 100%; }
+        .view-control > div { font-size: 13px; line-height: 1.3; margin-bottom: 3px; }
+        .view-control input { width: 100%; }
+        .stand-toolbar button { min-height: 32px; padding: 4px 10px; font-size: 12px; }
+        .playback-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; }
+        .scheme-help { font-size: 13px; line-height: 1.5; color: #cbd5e1; margin: 9px 4px; }
+        .scheme-scroll { overscroll-behavior-x: contain; scrollbar-color: #64748b #070b11; }
+        .measurement-strip { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 10px 0 2px; }
+        .measurement-grid { display: grid; grid-template-columns: repeat(3,minmax(150px,1fr)); gap: 8px; flex: 1 1 520px; font-size: 13px; }
+        .measurement-item { display: flex; flex-direction: column; gap: 4px; }
+        .measurement-strip > p { flex: 1 1 280px; font-size: 12px; line-height: 1.5; color: #94a3b8; }
+        #nodeCardTag, #quizScoreBadge { white-space: normal; }
+        #nodeCardTag { max-width: 65%; }
+        #nodeCardBody { font-size: 14px; }
+        #quizOptionsBox button, #quizQuestionText, #quizFeedbackBox { font-size: 13px; }
+        #quizScoreBadge { flex-shrink: 0; }
+        [aria-pressed="true"].ratio-btn { background: #164e63; color: #a5f3fc; outline: 1px solid #22d3ee; }
+        @media(max-width:600px) { .measurement-grid { grid-template-columns: 1fr; } }
+
+    
+*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:Inter, sans-serif;font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:JetBrains Mono, monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.sticky{position:sticky}.top-0{top:0px}.z-40{z-index:40}.mx-auto{margin-left:auto;margin-right:auto}.mb-0\.5{margin-bottom:0.125rem}.mb-1{margin-bottom:0.25rem}.mb-1\.5{margin-bottom:0.375rem}.mb-2\.5{margin-bottom:0.625rem}.mr-1{margin-right:0.25rem}.mt-2{margin-top:0.5rem}.mt-2\.5{margin-top:0.625rem}.mt-3{margin-top:0.75rem}.mt-4{margin-top:1rem}.block{display:block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-2{height:0.5rem}.h-2\.5{height:0.625rem}.h-5{height:1.25rem}.h-8{height:2rem}.h-auto{height:auto}.h-full{height:100%}.min-h-\[340px\]{min-height:340px}.min-h-screen{min-height:100vh}.w-11{width:2.75rem}.w-2{width:0.5rem}.w-2\.5{width:0.625rem}.w-32{width:8rem}.w-5{width:1.25rem}.w-7{width:1.75rem}.w-8{width:2rem}.w-full{width:100%}.min-w-\[1280px\]{min-width:1280px}.max-w-\[1760px\]{max-width:1760px}.flex-1{flex:1 1 0%}.shrink-0{flex-shrink:0}@keyframes ping{75%, 100%{transform:scale(2);opacity:0}}.animate-ping{animation:ping 1s cubic-bezier(0, 0, 0.2, 1) infinite}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}.cursor-pointer{cursor:pointer}.select-none{-webkit-user-select:none;user-select:none}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-0\.5{gap:0.125rem}.gap-1{gap:0.25rem}.gap-1\.5{gap:0.375rem}.gap-2{gap:0.5rem}.gap-2\.5{gap:0.625rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-1\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.375rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.375rem * var(--tw-space-y-reverse))}.space-y-2 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.5rem * var(--tw-space-y-reverse))}.space-y-2\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.625rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.625rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-x-auto{overflow-x:auto}.rounded{border-radius:0.25rem}.rounded-2xl{border-radius:1rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-2{border-width:2px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.border-cyan-500\/50{border-color:rgb(6 182 212 / 0.5)}.border-cyan-700\/50{border-color:rgb(14 116 144 / 0.5)}.border-emerald-500\/30{border-color:rgb(16 185 129 / 0.3)}.border-emerald-500\/40{border-color:rgb(16 185 129 / 0.4)}.border-emerald-500\/50{border-color:rgb(16 185 129 / 0.5)}.border-slate-700{--tw-border-opacity:1;border-color:rgb(51 65 85 / var(--tw-border-opacity, 1))}.border-slate-700\/80{border-color:rgb(51 65 85 / 0.8)}.border-slate-800{--tw-border-opacity:1;border-color:rgb(30 41 59 / var(--tw-border-opacity, 1))}.border-slate-800\/80{border-color:rgb(30 41 59 / 0.8)}.border-slate-800\/90{border-color:rgb(30 41 59 / 0.9)}.bg-\[\#070b12\]{--tw-bg-opacity:1;background-color:rgb(7 11 18 / var(--tw-bg-opacity, 1))}.bg-cyan-500\/25{background-color:rgb(6 182 212 / 0.25)}.bg-cyan-950{--tw-bg-opacity:1;background-color:rgb(8 51 68 / var(--tw-bg-opacity, 1))}.bg-emerald-400{--tw-bg-opacity:1;background-color:rgb(52 211 153 / var(--tw-bg-opacity, 1))}.bg-emerald-500\/15{background-color:rgb(16 185 129 / 0.15)}.bg-emerald-500\/20{background-color:rgb(16 185 129 / 0.2)}.bg-emerald-500\/25{background-color:rgb(16 185 129 / 0.25)}.bg-emerald-500\/30{background-color:rgb(16 185 129 / 0.3)}.bg-emerald-600{--tw-bg-opacity:1;background-color:rgb(5 150 105 / var(--tw-bg-opacity, 1))}.bg-panel-800{--tw-bg-opacity:1;background-color:rgb(15 22 34 / var(--tw-bg-opacity, 1))}.bg-panel-900{--tw-bg-opacity:1;background-color:rgb(9 13 20 / var(--tw-bg-opacity, 1))}.bg-panel-900\/95{background-color:rgb(9 13 20 / 0.95)}.bg-slate-800{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.bg-slate-900{--tw-bg-opacity:1;background-color:rgb(15 23 42 / var(--tw-bg-opacity, 1))}.bg-slate-900\/80{background-color:rgb(15 23 42 / 0.8)}.bg-slate-900\/90{background-color:rgb(15 23 42 / 0.9)}.bg-slate-950{--tw-bg-opacity:1;background-color:rgb(2 6 23 / var(--tw-bg-opacity, 1))}.bg-slate-950\/90{background-color:rgb(2 6 23 / 0.9)}.bg-slate-900\/70{background-color:rgb(15 23 42 / 0.7)}.p-1{padding:0.25rem}.p-2{padding:0.5rem}.p-2\.5{padding:0.625rem}.p-4{padding:1rem}.px-1{padding-left:0.25rem;padding-right:0.25rem}.px-1\.5{padding-left:0.375rem;padding-right:0.375rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-2\.5{padding-left:0.625rem;padding-right:0.625rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.pb-2{padding-bottom:0.5rem}.pt-2{padding-top:0.5rem}.pt-2\.5{padding-top:0.625rem}.text-left{text-align:left}.text-center{text-align:center}.text-right{text-align:right}.font-mono{font-family:JetBrains Mono, monospace}.font-sans{font-family:Inter, sans-serif}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-\[9px\]{font-size:9px}.text-base{font-size:1rem;line-height:1.5rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.font-medium{font-weight:500}.font-semibold{font-weight:600}.uppercase{text-transform:uppercase}.leading-none{line-height:1}.leading-relaxed{line-height:1.625}.tracking-tight{letter-spacing:-0.025em}.tracking-wider{letter-spacing:0.05em}.text-amber-300{--tw-text-opacity:1;color:rgb(252 211 77 / var(--tw-text-opacity, 1))}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36 / var(--tw-text-opacity, 1))}.text-cyan-300{--tw-text-opacity:1;color:rgb(103 232 249 / var(--tw-text-opacity, 1))}.text-cyan-400{--tw-text-opacity:1;color:rgb(34 211 238 / var(--tw-text-opacity, 1))}.text-emerald-200{--tw-text-opacity:1;color:rgb(167 243 208 / var(--tw-text-opacity, 1))}.text-emerald-300{--tw-text-opacity:1;color:rgb(110 231 183 / var(--tw-text-opacity, 1))}.text-emerald-400{--tw-text-opacity:1;color:rgb(52 211 153 / var(--tw-text-opacity, 1))}.text-purple-300{--tw-text-opacity:1;color:rgb(216 180 254 / var(--tw-text-opacity, 1))}.text-purple-400{--tw-text-opacity:1;color:rgb(192 132 252 / var(--tw-text-opacity, 1))}.text-sky-300{--tw-text-opacity:1;color:rgb(125 211 252 / var(--tw-text-opacity, 1))}.text-sky-400{--tw-text-opacity:1;color:rgb(56 189 248 / var(--tw-text-opacity, 1))}.text-slate-100{--tw-text-opacity:1;color:rgb(241 245 249 / var(--tw-text-opacity, 1))}.text-slate-200{--tw-text-opacity:1;color:rgb(226 232 240 / var(--tw-text-opacity, 1))}.text-slate-300{--tw-text-opacity:1;color:rgb(203 213 225 / var(--tw-text-opacity, 1))}.text-slate-400{--tw-text-opacity:1;color:rgb(148 163 184 / var(--tw-text-opacity, 1))}.text-slate-500{--tw-text-opacity:1;color:rgb(100 116 139 / var(--tw-text-opacity, 1))}.text-white{--tw-text-opacity:1;color:rgb(255 255 255 / var(--tw-text-opacity, 1))}.shadow-2xl{--tw-shadow:0 25px 50px -12px rgb(0 0 0 / 0.25);--tw-shadow-colored:0 25px 50px -12px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-\[0_0_25px_rgba\(0\2c 255\2c 157\2c 0\.12\)\]{--tw-shadow:0 0 25px rgba(0,255,157,0.12);--tw-shadow-colored:0 0 25px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-inner{--tw-shadow:inset 0 2px 4px 0 rgb(0 0 0 / 0.05);--tw-shadow-colored:inset 0 2px 4px 0 var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-xl{--tw-shadow:0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 20px 25px -5px var(--tw-shadow-color), 0 8px 10px -6px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.backdrop-blur-md{--tw-backdrop-blur:blur(12px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.selection\:bg-emerald-500 *::selection{--tw-bg-opacity:1;background-color:rgb(16 185 129 / var(--tw-bg-opacity, 1))}.selection\:text-slate-950 *::selection{--tw-text-opacity:1;color:rgb(2 6 23 / var(--tw-text-opacity, 1))}.selection\:bg-emerald-500::selection{--tw-bg-opacity:1;background-color:rgb(16 185 129 / var(--tw-bg-opacity, 1))}.selection\:text-slate-950::selection{--tw-text-opacity:1;color:rgb(2 6 23 / var(--tw-text-opacity, 1))}.hover\:bg-cyan-900:hover{--tw-bg-opacity:1;background-color:rgb(22 78 99 / var(--tw-bg-opacity, 1))}.hover\:bg-emerald-500:hover{--tw-bg-opacity:1;background-color:rgb(16 185 129 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-700:hover{--tw-bg-opacity:1;background-color:rgb(51 65 85 / var(--tw-bg-opacity, 1))}.hover\:bg-slate-800:hover{--tw-bg-opacity:1;background-color:rgb(30 41 59 / var(--tw-bg-opacity, 1))}.hover\:fill-emerald-500\/15:hover{fill:rgb(16 185 129 / 0.15)}@media (min-width: 640px){.sm\:p-3{padding:0.75rem}.sm\:px-4{padding-left:1rem;padding-right:1rem}.sm\:px-5{padding-left:1.25rem;padding-right:1.25rem}.sm\:text-base{font-size:1rem;line-height:1.5rem}.sm\:text-sm{font-size:0.875rem;line-height:1.25rem}}@media (min-width: 1280px){.xl\:col-span-4{grid-column:span 4 / span 4}.xl\:grid-cols-12{grid-template-columns:repeat(12, minmax(0, 1fr))}}
+</style>
+    <style>
+        body {
+            background-color: #05080d;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+
+        /* Компактные ползунки, встроенные прямо в реостаты на схеме */
+        input[type=range] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+            height: 16px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 4px;
+            border-radius: 999px;
+            background: #1e293b;
+            border: 1px solid #475569;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 13px;
+            height: 13px;
+            border-radius: 50%;
+            background: #10b981;
+            border: 2px solid #ecfdf5;
+            margin-top: -5px;
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.85);
+            transition: transform 0.12s ease, background-color 0.12s ease;
+        }
+        input[type=range]::-webkit-slider-thumb:hover {
+            transform: scale(1.22);
+            background: #34d399;
+        }
+        input[type=range].slider-amber::-webkit-slider-thumb {
+            background: #f59e0b;
+            box-shadow: 0 0 8px rgba(245, 158, 11, 0.85);
+        }
+        input[type=range].slider-sky::-webkit-slider-thumb {
+            background: #38bdf8;
+            box-shadow: 0 0 8px rgba(56, 189, 248, 0.85);
+        }
+        input[type=range].slider-cyan::-webkit-slider-thumb {
+            background: #06b6d4;
+            box-shadow: 0 0 8px rgba(6, 182, 212, 0.85);
+        }
+        input[type=range].slider-purple::-webkit-slider-thumb {
+            background: #c084fc;
+            box-shadow: 0 0 8px rgba(192, 132, 252, 0.85);
+        }
+
+        /* Интерактивные блоки функциональной схемы */
+        .schema-node {
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .schema-node:hover rect.node-box,
+        .schema-node:hover path.node-box {
+            stroke: #00ff9d !important;
+            stroke-width: 2.4px !important;
+            filter: drop-shadow(0 0 8px rgba(0, 255, 157, 0.35));
+        }
+        .schema-node.active-node rect.node-box,
+        .schema-node.active-node path.node-box {
+            stroke: #00ff9d !important;
+            stroke-width: 2.8px !important;
+            fill: rgba(0, 255, 157, 0.11) !important;
+            filter: drop-shadow(0 0 14px rgba(0, 255, 157, 0.55));
+        }
+
+        @keyframes signalFlow {
+            to { stroke-dashoffset: -24; }
+        }
+        .signal-wire-active {
+            stroke-dasharray: 6 6;
+            animation: signalFlow 0.8s linear infinite;
+        }
+
+        /* Оверлей-виджеты реостатов на схеме */
+        .rheostat-widget {
+            background: rgba(9, 14, 24, 0.92);
+            border: 1px solid rgba(71, 85, 105, 0.75);
+            border-radius: 8px;
+            padding: 3px 7px;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            user-select: none;
+        }
+        .rheostat-widget:hover {
+            border-color: #10b981;
+        }
+
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #070b11; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Читаемая схема без изменения состава блоков из методички. */
+        header { position: relative !important; }
+        header h1 { font-size: 18px !important; line-height: 1.35; }
+        header p { font-size: 13px !important; }
+        header button { min-height: 34px; font-size: 13px !important; }
+        button:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+            outline: 3px solid #fbbf24; outline-offset: 3px;
+        }
+        #eloUnifiedSvg text { font-size: 13px; }
+        #eloUnifiedSvg text[font-size="13"], #eloUnifiedSvg text[font-size="14"] { font-size: 14px; }
+        #svg3dDeflectionText { font-size: 12px !important; }
+        #eloUnifiedSvg text[font-size="15"] { font-size: 16px; }
+        #eloUnifiedSvg .rheostat-widget { font-size: 12px; }
+        .rheostat-widget > div:first-child { font-size: 12px; line-height: 1.15; white-space: nowrap; }
+        .rheostat-widget { padding: 3px 6px; }
+        #eloUnifiedSvg button { min-height: 18px; }
+        #eloUnifiedSvg .vdiv-btn, #eloUnifiedSvg .tdiv-btn { font-size: 10px; }
+        #eloUnifiedSvg input[type=range] { min-width: 0; flex-shrink: 1; }
+        #sigAmpLabel, #sigDcLabel, #sigFreqLabel { flex-shrink: 0; width: 58px; }
+        .stand-toolbar { display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; padding: 10px 12px; background: #0b121e; border: 1px solid #334155; border-radius: 12px; }
+        .view-control { width: 260px; max-width: 100%; }
+        .view-control > div { font-size: 13px; line-height: 1.3; margin-bottom: 3px; }
+        .view-control input { width: 100%; }
+        .stand-toolbar button { min-height: 32px; padding: 4px 10px; font-size: 12px; }
+        .playback-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 13px; }
+        .scheme-help { font-size: 13px; line-height: 1.5; color: #cbd5e1; margin: 9px 4px; }
+        .scheme-scroll { overscroll-behavior-x: contain; scrollbar-color: #64748b #070b11; }
+        .measurement-strip { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; padding: 10px 0 2px; }
+        .measurement-grid { display: grid; grid-template-columns: repeat(3,minmax(150px,1fr)); gap: 8px; flex: 1 1 520px; font-size: 13px; }
+        .measurement-item { display: flex; flex-direction: column; gap: 4px; }
+        .measurement-strip > p { flex: 1 1 280px; font-size: 12px; line-height: 1.5; color: #94a3b8; }
+        #nodeCardTag, #quizScoreBadge { white-space: normal; }
+        #nodeCardTag { max-width: 65%; }
+        #nodeCardBody { font-size: 14px; }
+        #quizOptionsBox button, #quizQuestionText, #quizFeedbackBox { font-size: 13px; }
+        #quizScoreBadge { flex-shrink: 0; }
+        [aria-pressed="true"].ratio-btn { background: #164e63; color: #a5f3fc; outline: 1px solid #22d3ee; }
+        @media(max-width:600px) { .measurement-grid { grid-template-columns: 1fr; } }
+
+        .mode-entry { margin-left: auto; flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 10px 16px; border: 1px solid #82e6ba; border-radius: 10px; background: #82e6ba; color: #10231b; font: 600 14px Arial, sans-serif; text-decoration: none; white-space: nowrap; }
+        .mode-entry:hover { background: #a3f0cf; }
+        .mode-entry:focus-visible { outline: 2px solid #efc17e; outline-offset: 3px; }
+        .mode-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .mode-heading > div:nth-child(2) { flex: 1 1 340px; min-width: 0; }
+        .theory-note { font-size: 12px; line-height: 1.6; color: #a8b7c8; }
+        .gos620-toggle { display: inline-flex; align-items: center; gap: 7px; color: #c7d8e8; font: 12px Arial, sans-serif; white-space: nowrap; cursor: pointer; }
+        .gos620-toggle input { width: 16px; height: 16px; accent-color: #82e6ba; }
+        .gos620-toggle:focus-within { outline: 2px solid #efc17e; outline-offset: 4px; border-radius: 3px; }
+        .gos620-labels { display: none; pointer-events: none; }
+        .gos620-labels[data-visible="true"] { display: inline; }
+        .gos620-labels rect { fill: #12243a; stroke: #7ba4cb; stroke-width: 0.8; }
+        #eloUnifiedSvg .gos620-labels text { fill: #d7ecff; font-family: Arial, sans-serif; font-weight: 700; text-anchor: middle; font-size: 11px; }
+        .gos620-card { margin-top: 12px; padding: 9px 11px; border-left: 3px solid #7ba4cb; background: #12243a; color: #d7ecff; font-size: 13px; line-height: 1.6; }
+        .gos620-card[hidden] { display: none; }
+        @media(min-width:1050px) { #eloUnifiedSvg { min-width: 0 !important; } }
+        @media(max-width:600px) { .mode-entry { margin-left: 0; width: 100%; } }
+    </style>
+<style id="publication-navigation-style">.publication-nav{box-sizing:border-box;position:relative;z-index:40;display:flex;flex-wrap:wrap;gap:8px 20px;padding:12px 16px;background:#edf4f1;color:#164e46;border-bottom:1px solid #bdcec7;font:600 14px/1.5 Arial,sans-serif}.publication-nav a{color:#164e46;text-decoration:underline;min-height:24px;display:inline-flex;align-items:center}.publication-nav a:focus-visible{outline:2px solid currentColor;outline-offset:3px}@media print{.publication-nav{display:none!important}}</style>
+</head>
+<body class="min-h-screen flex flex-col font-sans selection:bg-emerald-500 selection:text-slate-950">
+<nav class="publication-nav" aria-label="Переходы по работе"><a href="../../index.html#practice">← Практические работы</a><a href="practice.html">Перейти к практике →</a></nav>
+
+    <!-- ВЕРХНЯЯ ПАНЕЛЬ С РЕЖИМАМИ СТЕНДА И ОПЫТАМИ -->
+    <header class="sticky top-0 z-40 bg-panel-900/95 backdrop-blur-md border-b border-slate-800 px-3 sm:px-5 py-2">
+        <div class="max-w-[1760px] mx-auto flex flex-col gap-2">
+            <!-- Заголовок -->
+            <div class="mode-heading">
+                <div class="w-8 h-8 rounded-xl bg-emerald-500/15 border border-emerald-500/40 flex items-center justify-center shrink-0">
+                    <svg class="w-5 h-5 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="2" y="3" width="20" height="18" rx="3"/>
+                        <path d="M5 12h3l2-5 4 10 2-5h3" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-sm sm:text-base font-bold tracking-tight text-white">Принцип действия ЭЛТ · функциональная схема ЭЛО (рис. 1)</h1>
+                    </div>
+                    <p class="text-[11px] text-slate-400">Двигайте ползунки прямо на реостатах <strong class="text-amber-300">R1</strong>, <strong class="text-sky-300">R2</strong>, <strong class="text-emerald-300">R3</strong>, <strong class="text-cyan-300">R4</strong> на схеме и наблюдайте изгиб луча в ЭЛТ и проекцию на экран справа</p>
+                </div>
+                <a id="lessonModeLink" class="mode-entry" href="audio/lesson.html">▶ Урок с озвучкой</a>
+            </div>
+
+            <!-- Переключатель 3 режимов работы стенда -->
+            <div class="flex flex-wrap items-center gap-1.5 bg-slate-950/90 p-1 rounded-xl border border-slate-800">
+                <span class="text-[11px] font-mono text-slate-400 px-1.5">Режим:</span>
+                <button onclick="setLabMode('slow')" id="mode-btn-slow" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>1. Как рисуется сигнал</span>
+                </button>
+                <button onclick="setLabMode('manual')" id="mode-btn-manual" class="px-2.5 py-1 rounded-lg text-xs font-medium transition bg-slate-900 text-slate-300 border border-slate-700/80 hover:bg-slate-800">
+                    2. Ручное отклонение X / Y
+                </button>
+                <button onclick="setLabMode('realtime')" id="mode-btn-realtime" class="px-2.5 py-1 rounded-lg text-xs font-medium transition bg-slate-900 text-slate-300 border border-slate-700/80 hover:bg-slate-800">
+                    3. Быстрая развёртка
+                </button>
+            </div>
+
+            <!-- Готовые лабораторные опыты -->
+            <div class="flex flex-wrap items-center gap-1">
+                <span class="text-[11px] text-slate-400 mr-1">Опыты:</span>
+                <button onclick="applyPreset('sine_slow')" id="preset-sine_slow" class="preset-btn px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">Синусоида</button>
+                <button onclick="applyPreset('manual_plates')" id="preset-manual_plates" class="preset-btn px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">Отклонение R3/R4</button>
+                <button onclick="applyPreset('calibrator')" id="preset-calibrator" class="preset-btn px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">Калибратор 2В; 1кГц</button>
+                <button onclick="applyPreset('dc_ac')" id="preset-dc_ac" class="preset-btn px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">Вход SA1 (=/~/⊥)</button>
+                <button onclick="applyPreset('lissajous')" id="preset-lissajous" class="preset-btn px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700">Фигуры Лиссажу</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- ОСНОВНОЙ КОНТЕНТ -->
+    <main class="flex-1 max-w-[1760px] w-full mx-auto px-2 sm:px-4 py-3 space-y-4">
+
+        <!-- ======================================================================= -->
+        <!-- ГЛАВНЫЙ СТЕНД: ФУНКЦИОНАЛЬНАЯ СХЕМА ЭЛО (РИС. 1) С ПОЛЗУНКАМИ ПРЯМО НА  -->
+        <!-- РЕОСТАТАХ R1, R2, R3, R4 + ЭКРАН ОСЦИЛЛОГРАФА СПРАВА НА ОДНОЙ ОСИ С ЭЛТ -->
+        <!-- ======================================================================= -->
+        <section class="bg-panel-900 border border-slate-800 rounded-2xl p-2 sm:p-3 shadow-2xl">
+            
+            <div class="stand-toolbar" aria-label="Управление демонстрацией">
+                <div class="view-control">
+                            <div class="flex items-center justify-between text-[10px] leading-none mb-0.5">
+                                <span class="font-mono font-bold text-cyan-300">Обзор трубки:</span>
+                                <div class="flex items-center gap-1">
+                                    <span id="isoAngleLabel" class="font-mono font-bold text-emerald-400">38° 3D</span>
+                                    <button onclick="setIsoAngle(0)" title="Плоский разрез 2D" class="px-1 rounded bg-slate-800 hover:bg-slate-700 text-[9px] text-slate-300 font-mono">2D</button>
+                                    <button onclick="setIsoAngle(38)" title="Изометрия 38°" class="px-1 rounded bg-cyan-950 hover:bg-cyan-900 text-[9px] text-cyan-300 border border-cyan-700/50 font-mono">3D</button>
+                                </div>
+                            </div>
+                            <input type="range" id="isoAngleSlider" min="0" max="52" step="1" value="38" oninput="handleControlChange()" class="w-full slider-cyan"/>
+                        </div><div class="playback-controls">
+                            <span class="text-slate-400 font-mono shrink-0">Темп демонстрации:</span>
+                            <input type="range" id="beamSpeedSlider" min="0.15" max="3.5" step="0.05" value="0.85" oninput="handleControlChange()" class="w-32"/>
+                            <span id="beamSpeedLabel" class="font-mono font-bold text-emerald-400">0.9x</span>
+                            <button onclick="toggleFreeze()" id="freezeBtn" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 font-mono border border-slate-700">⏸ Пауза</button>
+                            <button onclick="clearScreenTrail()" class="px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 font-mono border border-slate-700">Сначала</button>
+                        </div>
+                <label class="gos620-toggle"><input type="checkbox" id="gos620Toggle" onchange="setGos620Labels(this.checked)"/>Подписи GOS-620</label>
+            </div>
+            <p class="scheme-help">Схема из методички сохранена полностью. R1 — яркость; R2 — фокус; R3 — отклонение вверх/вниз; R4 — влево/вправо. На узком экране прокручивайте схему по горизонтали.</p>
+<div role="region" aria-label="Полная функциональная схема ЭЛО и электронно-лучевая трубка" tabindex="0" class="scheme-scroll w-full overflow-x-auto rounded-xl bg-[#070b12] border border-slate-800/90 shadow-inner">
+                <!-- Единая интерактивная схема: слева и в центре — Рис. 1 из методички с ползунками прямо на R1, R2, R3, R4;
+                     справа на одной оси с торцом «Э» трубки — люминофорный Экран ЭЛТ (вид спереди) и графики проекции -->
+                <svg id="eloUnifiedSvg" viewBox="0 0 1500 720" class="w-full h-auto min-w-[1280px] select-none font-sans block">
+                    <defs>
+                        <clipPath id="isoScreenClip"><polygon id="isoScreenClipPolygon" points=""/></clipPath>
+                        <marker id="arrowGreen" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 1 L 8 5 L 0 9 z" fill="#10b981"/>
+                        </marker>
+                        <marker id="arrowCyan" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 1 L 8 5 L 0 9 z" fill="#06b6d4"/>
+                        </marker>
+                        <marker id="arrowAmber" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                            <path d="M 0 1 L 8 5 L 0 9 z" fill="#f59e0b"/>
+                        </marker>
+                        <marker id="arrowSky" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                            <path d="M 0 1 L 8 5 L 0 9 z" fill="#38bdf8"/>
+                        </marker>
+                        <linearGradient id="beamGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#fde047" stop-opacity="0.85"/>
+                            <stop offset="28%" stop-color="#38bdf8" stop-opacity="0.80"/>
+                            <stop offset="100%" stop-color="#00ff9d" stop-opacity="0.95"/>
+                        </linearGradient>
+                    </defs>
+
+                    <!-- =============================================================== -->
+                    <!-- 1. КАНАЛ Y (ВЕРТИКАЛЬНОЕ ОТКЛОНЕНИЕ) И ВХОД Y С КЛЮЧОМ SA1      -->
+                    <!-- =============================================================== -->
+                    <rect x="255" y="14" width="518" height="164" rx="10" fill="rgba(16, 185, 129, 0.025)" stroke="#26354d" stroke-width="1.6" stroke-dasharray="7 5"/>
+                    <text x="455" y="34" text-anchor="middle" fill="#10b981" font-size="13" font-weight="700" font-family="JetBrains Mono">Канал Y (Вертикальное отклонение)</text>
+
+                    <!-- Узел 1: Вход Y, конденсатор C1 и переключатель SA1 -->
+                    <g class="schema-node" id="node-input_y_sa1" onclick="selectNode('input_y_sa1')">
+                        <rect class="node-box" x="18" y="42" width="222" height="136" rx="8" fill="#0d1420" stroke="#2d3d56" stroke-width="1.6"/>
+                        <text x="30" y="64" fill="#f8fafc" font-size="12" font-weight="700">Вход Y</text>
+                        <circle cx="42" cy="84" r="8" fill="#111c2d" stroke="#10b981" stroke-width="2.2"/>
+                        <circle cx="42" cy="84" r="3" fill="#10b981"/>
+                        <line x1="42" y1="92" x2="42" y2="108" stroke="#94a3b8" stroke-width="1.6"/>
+                        <line x1="34" y1="108" x2="50" y2="108" stroke="#94a3b8" stroke-width="2"/>
+
+                        <!-- Линии к C1 и SA1 -->
+                        <line x1="50" y1="84" x2="128" y2="84" stroke="#10b981" stroke-width="2"/>
+                        <line x1="90" y1="84" x2="90" y2="106" stroke="#10b981" stroke-width="2"/>
+                        <line x1="90" y1="106" x2="125" y2="106" stroke="#10b981" stroke-width="2"/>
+                        <line x1="135" y1="84" x2="135" y2="126" stroke="#10b981" stroke-width="1.5" stroke-dasharray="3 3"/>
+
+                        <!-- Конденсатор C1 -->
+                        <text x="126" y="68" fill="#38bdf8" font-size="12" font-weight="700" font-family="JetBrains Mono">C1</text>
+                        <line x1="129" y1="73" x2="129" y2="95" stroke="#38bdf8" stroke-width="2.8"/>
+                        <line x1="138" y1="73" x2="138" y2="95" stroke="#38bdf8" stroke-width="2.8"/>
+
+                        <!-- Кликабельные позиции 1, 2, 3 переключателя SA1 -->
+                        <g role="button" tabindex="0" aria-label="SA1: положение 1" class="cursor-pointer sa1-contact" onclick="event.stopPropagation(); setSA1(1); selectNode('input_y_sa1', true);">
+                            <rect id="sa1Hit1" x="92" y="90" width="42" height="18" rx="4" fill="transparent" class="hover:fill-emerald-500/15 transition"/>
+                            <circle id="sa1Dot1" cx="128" cy="105" r="3" fill="#00ff9d"/>
+                            <text id="sa1Text1" x="98" y="103" fill="#00ff9d" font-size="11" font-weight="700" font-family="JetBrains Mono">≒ 1</text>
+                        </g>
+                        <g role="button" tabindex="0" aria-label="SA1: положение 2" class="cursor-pointer sa1-contact" onclick="event.stopPropagation(); setSA1(2); selectNode('input_y_sa1', true);">
+                            <rect id="sa1Hit2" x="92" y="113" width="42" height="18" rx="4" fill="transparent" class="hover:fill-emerald-500/15 transition"/>
+                            <circle id="sa1Dot2" cx="128" cy="125" r="3" fill="#64748b"/>
+                            <text id="sa1Text2" x="98" y="126" fill="#e2e8f0" font-size="11" font-family="JetBrains Mono">~ 2</text>
+                        </g>
+                        <g role="button" tabindex="0" aria-label="SA1: положение 3" class="cursor-pointer sa1-contact" onclick="event.stopPropagation(); setSA1(3); selectNode('input_y_sa1', true);">
+                            <rect id="sa1Hit3" x="92" y="136" width="42" height="18" rx="4" fill="transparent" class="hover:fill-emerald-500/15 transition"/>
+                            <circle id="sa1Dot3" cx="128" cy="148" r="3" fill="#64748b"/>
+                            <text id="sa1Text3" x="98" y="149" fill="#e2e8f0" font-size="11" font-family="JetBrains Mono">⊥ 3</text>
+                        </g>
+                        <line x1="95" y1="146" x2="95" y2="162" stroke="#94a3b8" stroke-width="1.6"/>
+                        <line x1="87" y1="162" x2="103" y2="162" stroke="#94a3b8" stroke-width="2"/>
+
+                        <!-- Подвижный контакт SA1 -->
+                        <circle cx="172" cy="84" r="4" fill="#10b981"/>
+                        <line id="svgSa1Arm" x1="172" y1="84" x2="128" y2="105" stroke="#00ff9d" stroke-width="2.8"/>
+                        <text x="178" y="124" fill="#00ff9d" font-size="12" font-weight="700" font-family="JetBrains Mono">SA1</text>
+                        <text x="136" y="168" fill="#94a3b8" font-size="10">(Клик 1, 2, 3)</text>
+                    </g>
+
+                    <!-- Встроенная панель параметров входного сигнала прямо под Входом Y -->
+                    <foreignObject x="14" y="182" width="234" height="94">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="rheostat-widget text-[10px] space-y-1">
+                            <div class="flex items-center justify-between">
+                                <span class="text-slate-300 font-semibold">Сигнал Y:</span>
+                                <div class="flex gap-1">
+                                    <button onclick="setWaveform('sine')" id="wf-sine" title="Синусоида" class="px-1.5 py-0.2 rounded bg-emerald-500/30 text-emerald-200 border border-emerald-500/50 font-mono">∿</button>
+                                    <button onclick="setWaveform('calibrator')" id="wf-calibrator" title="Калибратор 2,0 В; 1,0 кГц" class="px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-mono">⎍2В</button>
+                                    <button onclick="setWaveform('triangle')" id="wf-triangle" title="Треугольный" class="px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-mono">⋀</button>
+                                    <button onclick="setWaveform('saw')" id="wf-saw" title="Пилообразный" class="px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-mono">/|</button>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-slate-400 font-mono shrink-0 w-7">U<sub>m</sub>:</span>
+                                <input type="range" id="sigAmp" min="0.0" max="5.0" step="0.1" value="2.0" oninput="handleControlChange()" class="w-full"/>
+                                <span id="sigAmpLabel" class="font-mono font-bold text-emerald-400 w-11 text-right">2.0В</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-slate-400 font-mono shrink-0 w-7">U<sub>DC</sub>:</span>
+                                <input type="range" id="sigDc" min="-3.0" max="3.0" step="0.5" value="0.0" oninput="handleControlChange()" class="w-full slider-amber"/>
+                                <span id="sigDcLabel" class="font-mono font-bold text-amber-300 w-11 text-right">+0.0В</span>
+                            </div>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-slate-400 font-mono shrink-0 w-7">f<sub>Y</sub>:</span>
+                                <input type="range" id="sigFreqSlider" min="500" max="3000" step="250" value="1000" oninput="handleControlChange()" class="w-full slider-sky"/>
+                                <span id="sigFreqLabel" class="font-mono font-bold text-sky-300 w-11 text-right">1.0кГц</span>
+                            </div>
+                        </div>
+                    </foreignObject>
+
+                    <!-- Линия от SA1 к Делителю напряжения -->
+                    <line x1="172" y1="84" x2="275" y2="84" stroke="#10b981" stroke-width="2" class="signal-wire-active"/>
+
+                    <!-- Узел 2: Делитель напряжения -->
+                    <g class="schema-node" id="node-attenuator" onclick="selectNode('attenuator')">
+                        <rect class="node-box" x="275" y="64" width="122" height="72" rx="7" fill="#0d1420" stroke="#3b4d6b" stroke-width="1.8"/>
+                        <text x="336" y="86" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Делитель</text>
+                        <text x="336" y="102" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">напряжения</text>
+                    </g>
+                    <!-- Переключатель В/дел прямо внутри блока Делитель напряжения -->
+                    <foreignObject x="281" y="108" width="110" height="24">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="flex items-center justify-between gap-0.5">
+                            <button onclick="setVoltsDiv(0.5)" data-v="0.5" class="vdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-slate-900 text-slate-400 border border-slate-700">0.5</button>
+                            <button onclick="setVoltsDiv(1.0)" data-v="1.0" class="vdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 font-bold">1В</button>
+                            <button onclick="setVoltsDiv(2.0)" data-v="2.0" class="vdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-slate-900 text-slate-400 border border-slate-700">2В</button>
+                            <button onclick="setVoltsDiv(5.0)" data-v="5.0" class="vdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-slate-900 text-slate-400 border border-slate-700">5В</button>
+                        </div>
+                    </foreignObject>
+
+                    <line x1="397" y1="100" x2="436" y2="100" stroke="#10b981" stroke-width="2" class="signal-wire-active" marker-end="url(#arrowGreen)"/>
+
+                    <!-- Узел 3: Усилитель-корректор -->
+                    <g class="schema-node" id="node-amp_corrector" onclick="selectNode('amp_corrector')">
+                        <rect class="node-box" x="436" y="64" width="132" height="72" rx="7" fill="#0d1420" stroke="#3b4d6b" stroke-width="1.8"/>
+                        <text x="502" y="95" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Усилитель-</text>
+                        <text x="502" y="113" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">корректор</text>
+                    </g>
+
+                    <line x1="568" y1="100" x2="608" y2="100" stroke="#10b981" stroke-width="2" class="signal-wire-active" marker-end="url(#arrowGreen)"/>
+
+                    <!-- Узел 4: УМ_Y и РЕОСТАТ R3 СМЕЩЕНИЕ «↕» С ПРИВЯЗАННЫМ ПОЛЗУНКОМ -->
+                    <g class="schema-node" id="node-um_y" onclick="selectNode('um_y')">
+                        <!-- Графическое УГО реостата R3 прямо над УМ_Y -->
+                        <line x1="622" y1="58" x2="640" y2="58" stroke="#94a3b8" stroke-width="1.6"/>
+                        <line x1="622" y1="58" x2="622" y2="76" stroke="#94a3b8" stroke-width="1.6"/>
+                        <rect x="640" y="50" width="76" height="16" rx="3" fill="#132235" stroke="#10b981" stroke-width="1.8"/>
+                        <line x1="716" y1="58" x2="734" y2="58" stroke="#94a3b8" stroke-width="1.6"/>
+                        <line x1="734" y1="58" x2="734" y2="76" stroke="#94a3b8" stroke-width="1.6"/>
+
+                        <!-- Подвижный движок-стрелка реостата R3 (ездит по телу резистора!) -->
+                        <line id="svgR3WiperLine" x1="678" y1="76" x2="678" y2="66" stroke="#00ff9d" stroke-width="2.2"/>
+                        <polygon id="svgR3WiperHead" points="678,65 674,72 682,72" fill="#00ff9d"/>
+
+                        <rect class="node-box" x="608" y="76" width="140" height="60" rx="7" fill="#0d1420" stroke="#3b4d6b" stroke-width="1.8"/>
+                        <text x="678" y="111" text-anchor="middle" fill="#f8fafc" font-size="15" font-weight="700">УМ<tspan dy="4" font-size="11">Y</tspan></text>
+                    </g>
+
+                    <!-- Ползунок, привязанный прямо к реостату R3 смещение «↕» -->
+                    <foreignObject x="582" y="139" width="182" height="43">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="rheostat-widget flex flex-col">
+                            <div class="flex items-center justify-between text-[10px] leading-none mb-0.5">
+                                <span class="font-mono font-bold text-emerald-300">R3 смещение ↕</span>
+                                <div class="flex items-center gap-1">
+                                    <span id="r3ValLabel" class="font-mono font-bold text-emerald-400">0.0д</span>
+                                    <button onclick="resetR3()" title="Сброс R3 в 0" class="px-1 rounded bg-slate-800 hover:bg-slate-700 text-[9px] text-slate-300">0</button>
+                                </div>
+                            </div>
+                            <input type="range" id="r3ShiftY" min="-3.2" max="3.2" step="0.1" value="0" oninput="handleControlChange()" class="w-full"/>
+                        </div>
+                    </foreignObject>
+
+                    <!-- Две линии от выхода УМ_Y к вертикально отклоняющим пластинам Y внутри ЭЛТ -->
+                    <polyline points="748,92 812,92 812,320" fill="none" stroke="#10b981" stroke-width="2"/>
+                    <polyline points="748,116 792,116 792,380 812,380" fill="none" stroke="#10b981" stroke-width="2"/>
+
+                    <!-- Пунктирная оранжевая линия внутренней синхронизации от Усилителя-корректора к SA2 (1) -->
+                    <polyline points="502,136 502,186 260,186 260,492 224,492 224,548 242,548" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6 5" class="signal-wire-active"/>
+                    <text x="24" y="496" fill="#f59e0b" font-size="10" font-family="JetBrains Mono">Сигнал внутр. синхр.</text>
+
+                    <!-- =============================================================== -->
+                    <!-- 2. КАЛИБРАТОР АМПЛИТУДЫ И ДЛИТЕЛЬНОСТИ (2,0 В; 1,0 кГц)         -->
+                    <!-- =============================================================== -->
+                    <g class="schema-node" id="node-calibrator" onclick="setWaveform(state.waveform === 'calibrator' ? 'sine' : 'calibrator'); selectNode('calibrator')">
+                        <text x="95" y="292" text-anchor="middle" fill="#cbd5e1" font-size="11">Выход</text>
+                        <text x="95" y="307" text-anchor="middle" fill="#cbd5e1" font-size="11">калибратора ⎍⎍</text>
+                        <circle cx="55" cy="324" r="8" fill="#111c2d" stroke="#f59e0b" stroke-width="2.2"/>
+                        <circle cx="55" cy="324" r="3" fill="#f59e0b"/>
+                        <polyline points="63,324 115,324 115,346" fill="none" stroke="#f59e0b" stroke-width="1.8"/>
+                        <line x1="55" y1="332" x2="55" y2="344" stroke="#94a3b8" stroke-width="1.6"/>
+                        <line x1="47" y1="344" x2="63" y2="344" stroke="#94a3b8" stroke-width="2"/>
+
+                        <rect class="node-box" x="30" y="346" width="152" height="92" rx="7" fill="#0d1420" stroke="#f59e0b" stroke-width="1.8"/>
+                        <text x="106" y="370" text-anchor="middle" fill="#fef3c7" font-size="12" font-weight="700">Калибратор</text>
+                        <text x="106" y="387" text-anchor="middle" fill="#fef3c7" font-size="12" font-weight="600">амплитуды и</text>
+                        <text x="106" y="404" text-anchor="middle" fill="#fef3c7" font-size="12" font-weight="600">длительности</text>
+                        <text x="106" y="423" text-anchor="middle" fill="#fbbf24" font-size="11" font-family="JetBrains Mono" font-weight="700">(2,0 В; 1,0 кГц)</text>
+                    </g>
+                    <!-- Виртуальный провод от Калибратора ко Входу Y (появляется при включении Калибратора) -->
+                    <path id="calibratorJumperWire" d="M 47 324 C 5 260, 5 130, 34 84" fill="none" stroke="#f59e0b" stroke-width="2.2" stroke-dasharray="5 4" class="hidden"/>
+
+                    <!-- =============================================================== -->
+                    <!-- 3. БЛОК ПИТАНИЯ И РЕОСТАТЫ R1 («ЯРКОСТЬ») И R2 («ФОКУС»)        -->
+                    <!-- =============================================================== -->
+                    <g class="schema-node" id="node-power_supply" onclick="selectNode('power_supply')">
+                        <line x1="214" y1="336" x2="286" y2="336" stroke="#94a3b8" stroke-width="1.8"/>
+                        <line x1="214" y1="350" x2="286" y2="350" stroke="#94a3b8" stroke-width="1.8"/>
+                        <text x="248" y="328" text-anchor="middle" fill="#cbd5e1" font-size="11" font-family="JetBrains Mono">~220 В; 50 Гц</text>
+                        <rect class="node-box" x="286" y="204" width="74" height="266" rx="7" fill="#0d1420" stroke="#475569" stroke-width="2"/>
+                        <text x="323" y="332" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="700">Блок</text>
+                        <text x="323" y="350" text-anchor="middle" fill="#f8fafc" font-size="13" font-weight="700">питания</text>
+                    </g>
+
+                    <!-- Шина +3 500 В от Блока питания прямо на ускоряющий анод А2 -->
+                    <polyline points="360,214 752,214 752,302" fill="none" stroke="#38bdf8" stroke-width="2"/>
+                    <circle cx="752" cy="302" r="3" fill="#38bdf8"/>
+                    <text x="368" y="208" fill="#38bdf8" font-size="11" font-weight="700" font-family="JetBrains Mono">+3 500 В</text>
+
+                    <!-- Шина +450 В и РЕОСТАТ R2 «ФОКУС» (соединен с фокусирующим анодом А1) -->
+                    <g class="schema-node" id="node-r2_focus" onclick="selectNode('r2_focus')">
+                        <polyline points="360,244 522,244 522,262" fill="none" stroke="#38bdf8" stroke-width="1.8"/>
+                        <text x="368" y="238" fill="#38bdf8" font-size="11" font-weight="700" font-family="JetBrains Mono">+450 В</text>
+
+                        <!-- Тело резистора R2 -->
+                        <rect class="node-box" x="514" y="262" width="16" height="54" rx="3" fill="#132235" stroke="#38bdf8" stroke-width="2"/>
+                        <text x="492" y="293" fill="#38bdf8" font-size="11" font-weight="700" font-family="JetBrains Mono">R2</text>
+
+                        <!-- Подвижный движок R2 («фокус») идет направо и опускается точно на анод А1 (x=704) -->
+                        <polyline id="svgR2WiperWire" points="530,286 704,286 704,302" fill="none" stroke="#38bdf8" stroke-width="1.8"/>
+                        <circle cx="704" cy="302" r="3" fill="#38bdf8"/>
+                        <polygon id="svgR2WiperHead" points="530,286 537,282 537,290" fill="#38bdf8"/>
+                        <text x="562" y="274" fill="#7dd3fc" font-size="11" font-weight="600" font-family="JetBrains Mono">фокус</text>
+                    </g>
+
+                    <!-- Ползунок, привязанный к реостату R2 «фокус» (расположен над шиной фокуса, не перекрывая К, М, А1, А2) -->
+                    <foreignObject x="536" y="220" width="154" height="40">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="rheostat-widget flex flex-col">
+                            <div class="flex items-center justify-between text-[10px] leading-none mb-0.5">
+                                <span class="font-mono font-bold text-sky-300">R2 фокус</span>
+                                <span id="r2ValLabel" class="font-mono font-bold text-sky-400">+375В</span>
+                            </div>
+                            <input type="range" id="r2Focus" min="300" max="450" step="1" value="375" oninput="handleControlChange()" class="w-full slider-sky"/>
+                        </div>
+                    </foreignObject>
+
+                    <!-- Шина -100 В и РЕОСТАТ R1 «ЯРКОСТЬ» (соединен с модулятором М) -->
+                    <g class="schema-node" id="node-r1_brightness" onclick="selectNode('r1_brightness')">
+                        <polyline points="360,276 424,276 424,290" fill="none" stroke="#f59e0b" stroke-width="1.8"/>
+                        <text x="368" y="270" fill="#f59e0b" font-size="11" font-weight="700" font-family="JetBrains Mono">-100 В</text>
+
+                        <!-- Тело резистора R1 -->
+                        <rect class="node-box" x="416" y="290" width="16" height="54" rx="3" fill="#1f1914" stroke="#f59e0b" stroke-width="2"/>
+                        <text x="394" y="320" fill="#fbbf24" font-size="11" font-weight="700" font-family="JetBrains Mono">R1</text>
+
+                        <!-- Подвижный движок R1 («яркость») идет направо и заходит в ЭЛТ на модулятор М (x=654) -->
+                        <polyline id="svgR1WiperWire" points="432,324 654,324" fill="none" stroke="#f59e0b" stroke-width="1.8"/>
+                        <polygon id="svgR1WiperHead" points="432,324 439,320 439,328" fill="#f59e0b"/>
+                        <text x="448" y="314" fill="#fcd34d" font-size="11" font-weight="600" font-family="JetBrains Mono">яркость</text>
+                    </g>
+
+                    <!-- Ползунок, привязанный к реостату R1 «яркость» -->
+                    <foreignObject x="368" y="368" width="156" height="40">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="rheostat-widget flex flex-col">
+                            <div class="flex items-center justify-between text-[10px] leading-none mb-0.5">
+                                <span class="font-mono font-bold text-amber-300">R1 яркость</span>
+                                <span id="r1ValLabel" class="font-mono font-bold text-amber-400">-20В</span>
+                            </div>
+                            <input type="range" id="r1Brightness" min="-100" max="0" step="1" value="-20" oninput="handleControlChange()" class="w-full slider-amber"/>
+                        </div>
+                    </foreignObject>
+
+                    <!-- Общая шина корпуса (земля ⊥, φ_K = 0) для нижних выводов R1, R2 и катода К -->
+                    <line x1="424" y1="344" x2="424" y2="354" stroke="#94a3b8" stroke-width="1.8"/>
+                    <circle cx="424" cy="354" r="2.8" fill="#94a3b8"/>
+                    <line x1="522" y1="316" x2="522" y2="354" stroke="#94a3b8" stroke-width="1.8"/>
+                    <circle cx="522" cy="354" r="2.8" fill="#94a3b8"/>
+                    <line x1="414" y1="354" x2="612" y2="354" stroke="#94a3b8" stroke-width="1.8"/>
+                    <!-- Ввод катода К сверху (как на Рис. 1) -->
+                    <line x1="556" y1="354" x2="556" y2="298" stroke="#94a3b8" stroke-width="1.8"/>
+                    <circle cx="556" cy="354" r="2.8" fill="#94a3b8"/>
+                    <polyline points="556,298 612,298 612,332" fill="none" stroke="#94a3b8" stroke-width="1.8"/>
+                    <!-- Знак заземления ⊥ под R1 -->
+                    <line x1="424" y1="354" x2="424" y2="363" stroke="#94a3b8" stroke-width="1.8"/>
+                    <line x1="416" y1="363" x2="432" y2="363" stroke="#94a3b8" stroke-width="2.2"/>
+
+                    <!-- Накал НН (~6,3 В) -->
+                    <line x1="360" y1="414" x2="588" y2="414" stroke="#f97316" stroke-width="1.8"/>
+                    <line x1="360" y1="432" x2="588" y2="432" stroke="#f97316" stroke-width="1.8"/>
+                    <text x="368" y="427" fill="#fdba74" font-size="11" font-weight="700" font-family="JetBrains Mono">~6,3 В</text>
+
+                    <!-- Высокое напряжение Аквадага (5,0 ÷ 10,0 кВ) с ползунком -->
+                    <polyline id="svgAquadagSupplyWire" points="360,456 916,456 936,436" fill="none" stroke="#c084fc" stroke-width="2"/>
+                    <foreignObject x="395" y="438" width="175" height="40">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="rheostat-widget flex flex-col">
+                            <div class="flex items-center justify-between text-[10px] leading-none mb-0.5">
+                                <span class="font-mono font-bold text-purple-300">Аквадаг</span>
+                                <span id="aquadagValLabel" class="font-mono font-bold text-purple-400">7,5 кВ</span>
+                            </div>
+                            <input type="range" id="aquadagKv" min="5.0" max="10.0" step="0.5" value="7.5" oninput="handleControlChange()" class="w-full slider-purple"/>
+                        </div>
+                    </foreignObject>
+
+                    <!-- Встроенный регулятор угла 3D-изометрии ЭЛТ (позволяет плавно менять обзор от 2D-профиля до глубокой 3D-изометрии) -->
+                    
+
+                    <!-- =============================================================== -->
+                    <!-- 4. 3D-ИЗОМЕТРИЧЕСКАЯ ПРОЕКЦИЯ ЭЛТ С ЭЛЕКТРОДАМИ НН, К, М, А1, А2 -->
+                    <!--    И ОТКЛОНЕНИЕМ ЛУЧА ВДВОЙНЕ: ПО ВЕРТИКАЛИ Y И ГОРИЗОНТАЛИ X   -->
+                    <!-- =============================================================== -->
+                    <g class="schema-node" id="node-crt_gun" onclick="selectNode('crt_gun')">
+                        <!-- Цоколь в основании круглой стеклянной горловины ЭЛТ -->
+                        <path d="M 572 316 C 562 316, 562 384, 572 384 L 580 388 L 580 312 Z" fill="#1e293b" stroke="#64748b" stroke-width="1.5"/>
+                        <!-- Задняя/боковая круглая стеклянная оболочка колбы и конический 3D-раструб ЭЛТ -->
+                        <path id="svgCrt3dBody" class="node-box" d="M 580 302 L 885 302 C 912 302, 935 230, 975 230 A 72 120 0 0 1 975 470 C 935 470, 912 398, 885 398 L 580 398 A 12 48 0 0 1 580 302 Z" fill="#08121d" stroke="#94a3b8" stroke-width="2.1"/>
+                        <!-- Кольцевые 3D-сечения горловины и конуса круглой ЭЛТ -->
+                        <ellipse id="svgCrtBaseRing" cx="580" cy="350" rx="10" ry="48" fill="rgba(148, 163, 184, 0.06)" stroke="#475569" stroke-width="1.2"/>
+                        <ellipse id="svgCrtNeckRing" cx="885" cy="350" rx="16" ry="48" fill="none" stroke="#475569" stroke-width="1.1" stroke-dasharray="3 3"/>
+                        <path id="svgCrtConeMidRing" d="" fill="none" stroke="#334155" stroke-width="1.1" stroke-dasharray="4 3"/>
+                        <!-- Внутренние образующие конического раструба и блик цилиндрического стекла -->
+                        <path id="svgCrt3dConeEdges" d="" fill="none" stroke="#475569" stroke-width="1" stroke-dasharray="3 3"/>
+                        <path id="svgCrtGlassHighlight" d="M 588 309 L 884 309" fill="none" stroke="rgba(226, 232, 240, 0.16)" stroke-width="2.5" stroke-linecap="round"/>
+                        <text x="892" y="180" fill="#f8fafc" font-size="14" font-weight="700">ЭЛТ (3D)</text>
+                    </g>
+
+                    <!-- Оптическая ось Z ЭЛТ (y = 350) и 3D-оси координат X, Y на торцевом экране Э -->
+                    <line x1="608" y1="350" x2="1080" y2="350" stroke="#334155" stroke-width="1" stroke-dasharray="4 4"/>
+
+                    <!-- Нить накала НН, Катод К, Модулятор М (строго по Рис. 1 + 3D-объем цилиндров) -->
+                    <g class="schema-node" onclick="selectNode('crt_gun')">
+                        <!-- Вводы к петле подогревателя НН -->
+                        <path d="M 588 414 L 588 358" fill="none" stroke="#f97316" stroke-width="1.8"/>
+                        <path d="M 588 432 L 596 432 L 596 342 L 588 342" fill="none" stroke="#f97316" stroke-width="1.8"/>
+                        <path d="M 588 342 Q 604 350 588 358" fill="none" stroke="#fb923c" stroke-width="3"/>
+                        <text x="554" y="427" fill="#fdba74" font-size="12" font-weight="700" font-family="JetBrains Mono">НН</text>
+
+                        <!-- Катод К (3D-цилиндр с эмиттирующим торцом и выводом вверх к 0 В) -->
+                        <ellipse id="svgCathode3dRing" cx="612" cy="350" rx="5" ry="20" fill="rgba(248, 250, 252, 0.12)" stroke="#cbd5e1" stroke-width="1.4"/>
+                        <path d="M 608 328 C 622 338, 622 362, 608 372" fill="none" stroke="#f8fafc" stroke-width="3.2"/>
+                        <text x="562" y="294" fill="#f8fafc" font-size="12" font-weight="700" font-family="JetBrains Mono">К</text>
+
+                        <!-- Модулятор М (цилиндр Венельта в 3D + классические уголки Рис. 1 и вывод вверх к движку R1) -->
+                        <line x1="654" y1="324" x2="654" y2="302" stroke="#f59e0b" stroke-width="1.8"/>
+                        <ellipse id="svgModulator3dRing" cx="660" cy="350" rx="8" ry="29" fill="rgba(245, 158, 11, 0.10)" stroke="#f59e0b" stroke-width="1.3" stroke-dasharray="3 2"/>
+                        <polyline points="638,320 662,320 662,339" fill="none" stroke="#f59e0b" stroke-width="2.8"/>
+                        <polyline points="638,380 662,380 662,361" fill="none" stroke="#f59e0b" stroke-width="2.8"/>
+                        <text x="646" y="294" fill="#f59e0b" font-size="12" font-weight="700" font-family="JetBrains Mono">М</text>
+                    </g>
+
+                    <!-- Электростатическая линза в 3D: ФОКУСИРУЮЩИЙ АНОД А1 и УСКОРЯЮЩИЙ АНОД А2 (+3 500 В) -->
+                    <g class="schema-node" id="node-crt_lens" onclick="selectNode('crt_lens')">
+                        <!-- 3D-эллипсоид поля электростатической линзы между А1 и А2 -->
+                        <ellipse id="svgElectroLens" cx="728" cy="350" rx="18" ry="30" fill="rgba(56, 189, 248, 0.16)" stroke="#38bdf8" stroke-width="1.4" stroke-dasharray="3 3"/>
+
+                        <!-- Первый (фокусирующий) анод А1 (x = 704): 3D-кольцо + классические диафрагмы Рис. 1 -->
+                        <ellipse id="svgA1Ring3d" cx="704" cy="350" rx="9" ry="42" fill="rgba(56, 189, 248, 0.12)" stroke="#38bdf8" stroke-width="1.5"/>
+                        <ellipse id="svgA1Hole3d" cx="704" cy="350" rx="3.5" ry="11" fill="#071019" stroke="#7dd3fc" stroke-width="1.2"/>
+                        <line x1="704" y1="302" x2="704" y2="339" stroke="#38bdf8" stroke-width="4.2"/>
+                        <line x1="704" y1="361" x2="704" y2="394" stroke="#38bdf8" stroke-width="4.2"/>
+                        <text x="692" y="294" fill="#38bdf8" font-size="12" font-weight="700" font-family="JetBrains Mono">А1</text>
+
+                        <!-- Второй (ускоряющий) анод А2 (x = 752, +3 500 В): 3D-кольцо + классические диафрагмы Рис. 1 -->
+                        <ellipse id="svgA2Ring3d" cx="752" cy="350" rx="9" ry="42" fill="rgba(56, 189, 248, 0.16)" stroke="#38bdf8" stroke-width="1.5"/>
+                        <ellipse id="svgA2Hole3d" cx="752" cy="350" rx="3.5" ry="11" fill="#071019" stroke="#7dd3fc" stroke-width="1.2"/>
+                        <line x1="752" y1="302" x2="752" y2="339" stroke="#38bdf8" stroke-width="4.2"/>
+                        <line x1="752" y1="361" x2="752" y2="394" stroke="#38bdf8" stroke-width="4.2"/>
+                        <text x="742" y="294" fill="#38bdf8" font-size="12" font-weight="700" font-family="JetBrains Mono">А2</text>
+                    </g>
+
+                    <!-- 3D-СИСТЕМА ОТКЛОНЯЮЩИХ ПЛАСТИН Y (горизонтальные) И X (вертикальные в изометрии) -->
+                    <g class="schema-node" id="node-crt_plates" onclick="selectNode('crt_plates')">
+                        <!-- Нижняя пластина Y (в 3D-изометрии под лучом) -->
+                        <polygon id="svgPlateYBot" points="784,376 820,376 836,368 800,368" fill="#10b981" fill-opacity="0.26" stroke="#10b981" stroke-width="1.8"/>
+                        <!-- Верхняя пластина Y (в 3D-изометрии над лучом) -->
+                        <polygon id="svgPlateYTop" points="784,328 820,328 836,320 800,320" fill="#10b981" fill-opacity="0.32" stroke="#10b981" stroke-width="1.8"/>
+                        <text x="774" y="294" fill="#10b981" font-size="12" font-weight="700" font-family="JetBrains Mono">Y</text>
+
+                        <!-- Вертикальные линии электрического поля E_Y между пластинами Y -->
+                        <g id="svgPlateYFieldLines" opacity="0.6">
+                            <line x1="798" y1="326" x2="798" y2="370" stroke="#10b981" stroke-width="1.1" stroke-dasharray="2 2"/>
+                            <line x1="810" y1="326" x2="810" y2="370" stroke="#10b981" stroke-width="1.1" stroke-dasharray="2 2"/>
+                            <line x1="822" y1="326" x2="822" y2="370" stroke="#10b981" stroke-width="1.1" stroke-dasharray="2 2"/>
+                        </g>
+
+                        <!-- Динамические знаки потенциала + / - на пластинах Y -->
+                        <text id="svgPlateYTopSign" x="812" y="314" text-anchor="middle" fill="#fda4af" font-size="11" font-weight="700" font-family="JetBrains Mono">+</text>
+                        <text id="svgPlateYBotSign" x="812" y="391" text-anchor="middle" fill="#7dd3fc" font-size="11" font-weight="700" font-family="JetBrains Mono">−</text>
+
+                        <!-- Дальняя (левая по экрану, x < 0) вертикальная 3D-пластина X -->
+                        <polygon id="svgPlateXFar" points="838,314 868,314 868,354 838,354" fill="#06b6d4" fill-opacity="0.20" stroke="#06b6d4" stroke-width="1.6"/>
+                        <!-- Поперечные изометрические линии электрического поля E_X между вертикальными пластинами X -->
+                        <g id="svgPlateXFieldLines" opacity="0.65">
+                            <line id="svgFieldX1" x1="846" y1="334" x2="872" y2="354" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="2 2"/>
+                            <line id="svgFieldX2" x1="856" y1="334" x2="882" y2="354" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="2 2"/>
+                            <line id="svgFieldX3" x1="866" y1="334" x2="892" y2="354" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="2 2"/>
+                        </g>
+                        <!-- Ближняя (правая по экрану, x > 0) вертикальная 3D-пластина X -->
+                        <polygon id="svgPlateXNear" points="862,344 892,344 892,384 862,384" fill="#06b6d4" fill-opacity="0.32" stroke="#22d3ee" stroke-width="2"/>
+
+                        <!-- Динамические знаки потенциала на пластинах X -->
+                        <text id="svgPlateXFarSign" x="850" y="310" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700" font-family="JetBrains Mono">−</text>
+                        <text id="svgPlateXNearSign" x="888" y="396" text-anchor="middle" fill="#fda4af" font-size="10" font-weight="700" font-family="JetBrains Mono">+</text>
+                        <text x="838" y="422" fill="#06b6d4" font-size="12" font-weight="700" font-family="JetBrains Mono">X (3D)</text>
+                    </g>
+
+                    <!-- Аквадаг и 3D-ИЗОМЕТРИЧЕСКИЙ ЭКРАН «Э» НА ТОРЦЕ ЭЛТ -->
+                    <g class="schema-node" id="node-crt_screen_aquadag" onclick="selectNode('crt_screen_aquadag')">
+                        <path id="svgAquadagTop" d="M 884 306 C 908 306, 930 245, 958 232" fill="none" stroke="#c084fc" stroke-width="3" stroke-dasharray="6 3"/>
+                        <path id="svgAquadagBot" d="M 884 394 C 908 394, 930 455, 958 468" fill="none" stroke="#c084fc" stroke-width="3" stroke-dasharray="6 3"/>
+                        <text x="854" y="274" fill="#d8b4fe" font-size="11" font-weight="700">Аквадаг</text>
+                        <polyline points="900,274 912,274 918,282" fill="none" stroke="#d8b4fe" stroke-width="1.4"/>
+
+                        <!-- Прямоугольный 3D-экран «Э» в изометрии на торце ЭЛТ -->
+                        <polygon id="svgIsoScreenFace" points="" fill="rgba(0, 255, 157, 0.06)" stroke="#00ff9d" stroke-width="2.4" stroke-linejoin="round"/>
+                        <!-- Внутренняя прямоугольная рамка координатной сетки экрана -->
+                        <polygon id="svgIsoScreenInnerGrid" points="" fill="none" stroke="rgba(0, 255, 157, 0.22)" stroke-width="1" stroke-dasharray="2 3" stroke-linejoin="round"/>
+                        <!-- Оси координат Y и X прямо на прямоугольном 3D-изометрическом экране «Э» -->
+                        <line id="svgIsoScreenAxisY" x1="975" y1="230" x2="975" y2="470" stroke="rgba(0, 255, 157, 0.42)" stroke-width="1.3" stroke-dasharray="3 3"/>
+                        <line id="svgIsoScreenAxisX" x1="935" y1="327" x2="1015" y2="373" stroke="rgba(34, 211, 238, 0.55)" stroke-width="1.5" stroke-dasharray="3 3"/>
+                        <text id="svgIsoAxisXLabel" x="1018" y="382" fill="#22d3ee" font-size="10" font-weight="700" font-family="JetBrains Mono">+X</text>
+                        <text id="svgIsoAxisYLabel" x="975" y="220" text-anchor="middle" fill="#10b981" font-size="10" font-weight="700" font-family="JetBrains Mono">+Y</text>
+                        <text id="svgIsoScreenLabelE" x="1018" y="256" fill="#00ff9d" font-size="14" font-weight="700" font-family="JetBrains Mono">Э</text>
+                    </g>
+
+                    <!-- =============================================================== -->
+                    <!-- 3D-ЛУЧ, ЕГО ПРОЕКЦИИ И СЛЕД НА 3D-ЭКРАНЕ Э                     -->
+                    <!-- =============================================================== -->
+                    <!-- Вертикальная проекция луча в плоскости YZ (отклонение только по оси Y при X = 0) -->
+                    <path id="svgBeamShadowYZ" d="M 790 350 L 975 350" fill="none" stroke="#10b981" stroke-width="1.4" stroke-dasharray="3 3" opacity="0.65"/>
+                    <circle id="svgIsoAxisYDot" cx="975" cy="350" r="3.5" fill="#10b981"/>
+
+                    <!-- Координатный параллелограмм на 3D-экране Э: соединяет проекцию X и проекцию Y с точкой удара луча (X, Y) -->
+                    <polyline id="svgIsoCoordBox" points="975,350 975,350 975,350" fill="none" stroke="#fde047" stroke-width="1.3" stroke-dasharray="3 2" opacity="0.85"/>
+
+                    <!-- Светящаяся осциллограмма непосредственно на 3D-изометрическом экране «Э» в торце ЭЛТ -->
+                    <path id="svgIsoWaveformPath" clip-path="url(#isoScreenClip)" d="" fill="none" stroke="#00ff9d" stroke-width="2.1" opacity="0.85"/>
+
+                    <!-- Объемный конверт и ядро 3D-электронного луча -->
+                    <path id="svgBeamEnvelope" d="M 612 350 L 706 342 L 752 346 L 800 347 L 975 350 L 800 353 L 752 354 L 706 358 Z" fill="url(#beamGrad)" opacity="0.72"/>
+                    <path id="svgBeamCorePath" d="M 612 350 L 800 350 L 868 350 L 975 350" fill="none" stroke="#00ff9d" stroke-width="2.8" stroke-dasharray="6 4" class="signal-wire-active"/>
+                    <circle id="svgTubeImpactSpot" cx="975" cy="350" r="6.5" fill="#00ff9d" stroke="#ecfdf5" stroke-width="1.5"/>
+
+                    <!-- Выносной бейдж текущего отклонения по оси X и Y прямо под раструбом 3D-ЭЛТ -->
+                    <g id="svg3dDeflectionReadout" transform="translate(945, 693)">
+                        <rect x="-120" y="0" width="240" height="20" rx="5" fill="#060c16" stroke="#1e293b" stroke-width="1.2"/>
+                        <text id="svg3dDeflectionText" x="0" y="13" text-anchor="middle" fill="#67e8f9" font-size="10" font-weight="700" font-family="JetBrains Mono">3D луч: X=0.0д, Y=0.0д</text>
+                    </g>
+
+                    <!-- =============================================================== -->
+                    <!-- 5. СИНХРОНИЗАЦИЯ SA2 И КАНАЛ X (ГОРИЗОНТАЛЬНОЕ ОТКЛОНЕНИЕ)      -->
+                    <!-- =============================================================== -->
+                    <rect x="355" y="502" width="465" height="170" rx="10" fill="rgba(6, 182, 212, 0.025)" stroke="#26354d" stroke-width="1.6" stroke-dasharray="7 5"/>
+                    <text x="530" y="522" text-anchor="middle" fill="#22d3ee" font-size="13" font-weight="700" font-family="JetBrains Mono">Канал X (Горизонтальное отклонение)</text>
+
+                    <!-- Узел 8: Синхронизация SA2 -->
+                    <g class="schema-node" id="node-sync_sa2" onclick="setSA2(state.sa2 === 1 ? 2 : 1); selectNode('sync_sa2')">
+                        <rect class="node-box" x="18" y="514" width="286" height="96" rx="8" fill="#0d1420" stroke="#2d3d56" stroke-width="1.8"/>
+                        <text x="30" y="566" fill="#f8fafc" font-size="12" font-weight="700">Синхронизация:</text>
+                        <text x="142" y="546" fill="#fbbf24" font-size="11" font-weight="700" font-family="JetBrains Mono">Внутр. 1</text>
+                        <text x="142" y="590" fill="#cbd5e1" font-size="11" font-family="JetBrains Mono">Внешн. 2</text>
+
+                        <circle cx="204" cy="586" r="6" fill="#111c2d" stroke="#f59e0b" stroke-width="1.8"/>
+                        <line x1="210" y1="586" x2="242" y2="586" stroke="#f59e0b" stroke-width="1.8"/>
+                        <line x1="204" y1="592" x2="204" y2="603" stroke="#94a3b8" stroke-width="1.5"/>
+                        <line x1="196" y1="603" x2="212" y2="603" stroke="#94a3b8" stroke-width="2"/>
+
+                        <circle cx="284" cy="566" r="4" fill="#f59e0b"/>
+                        <line id="svgSa2Arm" x1="284" y1="566" x2="242" y2="548" stroke="#fbbf24" stroke-width="2.8"/>
+                        <text x="255" y="540" fill="#fbbf24" font-size="12" font-weight="700" font-family="JetBrains Mono">SA2</text>
+                    </g>
+
+                    <line x1="284" y1="566" x2="382" y2="566" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowAmber)"/>
+
+                    <!-- Узел 9: Генератор развертки -->
+                    <g class="schema-node" id="node-sweep_gen" onclick="selectNode('sweep_gen')">
+                        <rect class="node-box" x="382" y="534" width="124" height="72" rx="7" fill="#0d1420" stroke="#06b6d4" stroke-width="1.8"/>
+                        <text x="444" y="556" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">Генератор</text>
+                        <text x="444" y="572" text-anchor="middle" fill="#f8fafc" font-size="12" font-weight="700">развертки</text>
+                    </g>
+                    <!-- Кнопки длительности развертки прямо внутри Генератора развертки -->
+                    <foreignObject x="388" y="578" width="112" height="24">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="flex items-center justify-between gap-0.5">
+                            <button onclick="setTimeDiv(0.1)" data-t="0.1" class="tdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-slate-900 text-slate-400 border border-slate-700">0.1</button>
+                            <button onclick="setTimeDiv(0.2)" data-t="0.2" class="tdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-cyan-500/25 text-cyan-300 border border-cyan-500/50 font-bold">0.2мс</button>
+                            <button onclick="setTimeDiv(0.5)" data-t="0.5" class="tdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-slate-900 text-slate-400 border border-slate-700">0.5</button>
+                            <button onclick="setTimeDiv(1.0)" data-t="1.0" class="tdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-slate-900 text-slate-400 border border-slate-700">1.0</button>
+                        </div>
+                    </foreignObject>
+
+                    <!-- Узел 10: Вход X и переключатель SA3 -->
+                    <g class="schema-node" id="node-sa3_switch" onclick="setSA3(state.sa3 === 1 ? 2 : 1); selectNode('sa3_switch')">
+                        <rect x="516" y="538" width="82" height="82" rx="6" fill="transparent" pointer-events="all"/>
+                        <text x="30" y="628" fill="#f8fafc" font-size="12" font-weight="700">Вход X</text>
+                        <circle cx="46" cy="646" r="8" fill="#111c2d" stroke="#06b6d4" stroke-width="2.2"/>
+                        <circle cx="46" cy="646" r="3" fill="#06b6d4"/>
+                        <line x1="46" y1="654" x2="46" y2="668" stroke="#94a3b8" stroke-width="1.6"/>
+                        <line x1="38" y1="668" x2="54" y2="668" stroke="#94a3b8" stroke-width="2"/>
+
+                        <line x1="506" y1="566" x2="542" y2="566" stroke="#06b6d4" stroke-width="2"/>
+                        <polyline points="54,646 542,646 542,602" fill="none" stroke="#06b6d4" stroke-width="2"/>
+
+                        <text x="525" y="558" fill="#67e8f9" font-size="11" font-family="JetBrains Mono">1</text>
+                        <text x="525" y="610" fill="#cbd5e1" font-size="11" font-family="JetBrains Mono">2</text>
+                        <circle cx="585" cy="584" r="4" fill="#06b6d4"/>
+                        <line id="svgSa3Arm" x1="585" y1="584" x2="542" y2="566" stroke="#22d3ee" stroke-width="2.8"/>
+                        <text x="556" y="555" fill="#22d3ee" font-size="12" font-weight="700" font-family="JetBrains Mono">SA3</text>
+                    </g>
+
+                    <!-- Выбор соотношения частот Лиссажу у Входа X -->
+                    <foreignObject x="72" y="620" width="260" height="40">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="flex items-center gap-1 text-[10px]">
+                            <span class="text-cyan-300 font-mono">X:Y:</span>
+                            <button onclick="setSA3(2); setLissajousRatio(1,1)" data-ratio="1:1" class="ratio-btn px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono">1:1</button>
+                            <button onclick="setSA3(2); setLissajousRatio(1,2)" data-ratio="1:2" class="ratio-btn px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono">1:2</button>
+                            <button onclick="setSA3(2); setLissajousRatio(1,3)" data-ratio="1:3" class="ratio-btn px-1.5 py-0.2 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 font-mono">1:3</button>
+                            <button onclick="setSA3(1)" class="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-700/50 font-mono">Пила</button>
+                        </div>
+                    </foreignObject>
+
+                    <line x1="585" y1="584" x2="642" y2="584" stroke="#06b6d4" stroke-width="2" class="signal-wire-active" marker-end="url(#arrowCyan)"/>
+
+                    <!-- Узел 11: УМ_X и РЕОСТАТ R4 СМЕЩЕНИЕ «↔» С ПРИВЯЗАННЫМ ПОЛЗУНКОМ -->
+                    <g class="schema-node" id="node-um_x" onclick="selectNode('um_x')">
+                        <!-- Графическое УГО реостата R4 прямо над УМ_X -->
+                        <line x1="656" y1="546" x2="674" y2="546" stroke="#94a3b8" stroke-width="1.6"/>
+                        <line x1="656" y1="546" x2="656" y2="564" stroke="#94a3b8" stroke-width="1.6"/>
+                        <rect x="674" y="538" width="76" height="16" rx="3" fill="#132235" stroke="#06b6d4" stroke-width="1.8"/>
+                        <line x1="750" y1="546" x2="768" y2="546" stroke="#94a3b8" stroke-width="1.6"/>
+                        <line x1="768" y1="546" x2="768" y2="564" stroke="#94a3b8" stroke-width="1.6"/>
+
+                        <!-- Подвижный движок-стрелка реостата R4 (ездит по телу резистора!) -->
+                        <line id="svgR4WiperLine" x1="712" y1="564" x2="712" y2="554" stroke="#22d3ee" stroke-width="2.2"/>
+                        <polygon id="svgR4WiperHead" points="712,553 708,560 716,560" fill="#22d3ee"/>
+
+                        <rect class="node-box" x="642" y="564" width="140" height="60" rx="7" fill="#0d1420" stroke="#06b6d4" stroke-width="1.8"/>
+                        <text x="712" y="599" text-anchor="middle" fill="#f8fafc" font-size="15" font-weight="700">УМ<tspan dy="4" font-size="11">X</tspan></text>
+                    </g>
+
+                    <!-- Ползунок, привязанный прямо к реостату R4 смещение «↔» -->
+                    <foreignObject x="620" y="628" width="182" height="43">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="rheostat-widget flex flex-col">
+                            <div class="flex items-center justify-between text-[10px] leading-none mb-0.5">
+                                <span class="font-mono font-bold text-cyan-300">R4 смещение ↔</span>
+                                <div class="flex items-center gap-1">
+                                    <span id="r4ValLabel" class="font-mono font-bold text-cyan-400">0.0д</span>
+                                    <button onclick="resetR4()" title="Сброс R4 в 0" class="px-1 rounded bg-slate-800 hover:bg-slate-700 text-[9px] text-slate-300">0</button>
+                                </div>
+                            </div>
+                            <input type="range" id="r4ShiftX" min="-4.2" max="4.2" step="0.1" value="0" oninput="handleControlChange()" class="w-full slider-cyan"/>
+                        </div>
+                    </foreignObject>
+
+                    <!-- Две линии от выхода УМ_X к горизонтально отклоняющим 3D-пластинам X внутри ЭЛТ -->
+                    <polyline id="svgWireUmXFar" points="782,578 852,578 852,354" fill="none" stroke="#06b6d4" stroke-width="2"/>
+                    <polyline id="svgWireUmXNear" points="782,602 878,602 878,384" fill="none" stroke="#06b6d4" stroke-width="2"/>
+
+                    <!-- =============================================================== -->
+                    <!-- 6. ПРАВАЯ ЧАСТЬ: ЭКРАН ЭЛТ (ВИД СПЕРЕДИ) РЯДОМ СПРАВА НА ОДНОЙ   -->
+                    <!--    ГОРИЗОНТАЛЬНОЙ ОСИ С ЭЛТ + ПРОЕКЦИОННЫЕ ЛИНИИ Y(t) И X(t)     -->
+                    <!-- =============================================================== -->
+
+                    <!-- ВЕРХНЕЕ ОКНО СПРАВА (на уровне Канала Y): Осциллограмма u_Y(t) на пластинах Y и скорость луча -->
+                    <rect x="1090" y="18" width="380" height="122" rx="10" fill="#0b121e" stroke="#1e293b" stroke-width="1.6"/>
+                    <text x="1104" y="36" fill="#6ee7b7" font-size="11" font-weight="700" font-family="JetBrains Mono">Пластины Y: u_Y(t)</text>
+                    <text id="plateYInstantBadge" x="1456" y="36" text-anchor="end" fill="#10b981" font-size="11" font-weight="700" font-family="JetBrains Mono">U_Y = +0.0 В</text>
+
+                    <foreignObject x="1100" y="42" width="360" height="92">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full">
+                            <canvas id="plateYGraphCanvas" class="w-full h-full block rounded bg-slate-950/90 border border-slate-800"></canvas>
+                        </div>
+                    </foreignObject>
+
+                    
+
+                    <!-- ЦЕНТРАЛЬНОЕ ОКНО СПРАВА (y = 206..494, центр y = 350 — СТРОГО НА ОДНОЙ ОСИ С ТОРЦОМ ЭЛТ «Э»!):
+                         ЛЮМИНОФОРНЫЙ ЭКРАН ЭЛТ (ВИД СПЕРЕДИ) -->
+                    <text x="1100" y="198" fill="#00ff9d" font-size="10" font-weight="700" font-family="JetBrains Mono">ЭКРАН ЭЛТ «Э» · ВИД СПЕРЕДИ</text>
+                    <text id="hudCoordXY" x="1460" y="510" text-anchor="end" fill="#6ee7b7" font-size="10" font-weight="700" font-family="JetBrains Mono">X: 0.0, Y: 0.0</text>
+
+                    <foreignObject x="1100" y="206" width="360" height="288">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full rounded-xl overflow-hidden border-2 border-emerald-500/40 shadow-[0_0_25px_rgba(0,255,157,0.12)]">
+                            <canvas id="frontScreenCanvas" class="w-full h-full block"></canvas>
+                        </div>
+                    </foreignObject>
+
+                    <!-- НИЖНЕЕ ОКНО СПРАВА (на уровне Канала X, прямо под экраном):
+                         График развертки на пластинах X u_X(t) с вертикальной проекцией X(t) вверх на экран! -->
+                    <rect x="1090" y="514" width="380" height="124" rx="10" fill="#0b121e" stroke="#1e293b" stroke-width="1.6"/>
+                    <text x="1104" y="532" fill="#67e8f9" font-size="11" font-weight="700" font-family="JetBrains Mono">Пластины X: u_X(t)</text>
+                    <text id="plateXInstantBadge" x="1456" y="532" text-anchor="end" fill="#22d3ee" font-size="11" font-weight="700" font-family="JetBrains Mono">U_X = +0.0 В</text>
+
+                    <foreignObject x="1100" y="538" width="360" height="92">
+                        <div xmlns="http://www.w3.org/1999/xhtml" class="w-full h-full">
+                            <canvas id="plateXGraphCanvas" class="w-full h-full block rounded bg-slate-950/90 border border-slate-800"></canvas>
+                        </div>
+                    </foreignObject>
+
+                    <!-- Индикаторы измерений под графиком X -->
+                    
+
+                    <!-- =============================================================== -->
+                    <!-- 7. ПРОЕКЦИОННЫЕ ЛУЧИ ОТ ТОРЦА ЭЛТ И ГРАФИКА X НА ЭКРАН СПРАВА   -->
+                    <!-- =============================================================== -->
+                    <!-- Горизонтальная проекционная линия координаты Y(t): от точки удара луча в ЭЛТ (x=992) до пятна на экране (x=1100..1460) -->
+                    <line id="svgProjLineY" x1="992" y1="350" x2="1280" y2="350" stroke="#00ff9d" stroke-width="2" stroke-dasharray="6 4"/>
+                    <g id="svgProjBadgeY" transform="translate(1046, 350)">
+                        <rect x="-28" y="-18" width="56" height="15" rx="4" fill="#05080d" stroke="#10b981" stroke-width="1"/>
+                        <text x="0" y="-7" text-anchor="middle" fill="#00ff9d" font-size="10" font-weight="700" font-family="JetBrains Mono">Y(t) →</text>
+                    </g>
+
+                    <!-- Вертикальная проекционная линия координаты X(t): соединяет центр точки на пиле u_X(t) внизу и пятно на экране ЭЛТ -->
+                    <line id="svgProjLineX" x1="1280" y1="584" x2="1280" y2="350" stroke="#22d3ee" stroke-width="1.8" stroke-dasharray="5 4"/>
+                    <circle id="svgProjDotXOverlay" cx="1280" cy="584" r="5" fill="#22d3ee" stroke="#ecfeff" stroke-width="1.5"/>
+                    <g id="gos620Labels" class="gos620-labels" data-visible="false" aria-hidden="true" pointer-events="none">
+                        <g data-node="input_y_sa1"><rect x="150" y="46" width="82" height="18" rx="4"/><text x="191" y="59" font-size="10">AC·GND·DC</text></g>
+                        <g data-node="input_y_sa1"><rect x="25" y="146" width="62" height="18" rx="4"/><text x="56" y="159" font-size="9">CH1 / CH2</text></g>
+                        <g data-node="attenuator"><rect x="285" y="145" width="104" height="18" rx="4"/><text x="337" y="158" font-size="12">VOLTS/DIV</text></g>
+                        <g data-node="um_y"><rect x="632" y="26" width="110" height="18" rx="4"/><text x="687" y="39" font-size="11">POSITION ↕</text></g>
+                        <g data-node="r2_focus"><rect x="700" y="225" width="64" height="18" rx="4"/><text x="732" y="238" font-size="11">FOCUS</text></g>
+                        <g data-node="r1_brightness"><rect x="446" y="287" width="62" height="18" rx="4"/><text x="477" y="300" font-size="11">INTEN</text></g>
+                        <g data-node="calibrator"><rect x="74" y="444" width="64" height="18" rx="4"/><text x="106" y="457" font-size="12">CAL</text></g>
+                        <g data-node="power_supply"><rect x="292" y="480" width="68" height="18" rx="4"/><text x="326" y="493" font-size="11">POWER</text></g>
+                        <g data-node="sync_sa2"><rect x="30" y="526" width="84" height="18" rx="4"/><text x="72" y="539" font-size="12">SOURCE</text></g>
+                        <g data-node="sync_sa2"><rect x="30" y="584" width="100" height="18" rx="4"/><text x="80" y="597" font-size="10">EXT · TRIG IN</text></g>
+                        <g data-node="sweep_gen"><rect x="392" y="610" width="104" height="18" rx="4"/><text x="444" y="623" font-size="12">TIME/DIV</text></g>
+                        <g data-node="sa3_switch"><rect x="547" y="606" width="62" height="18" rx="4"/><text x="578" y="619" font-size="12">X-Y</text></g>
+                        <g data-node="um_x"><rect x="650" y="675" width="124" height="18" rx="4"/><text x="712" y="688" font-size="11">POSITION ↔</text></g>
+                    </g>
+                </svg>
+            </div>
+
+            <p id="crtObservation" class="scheme-help" role="status" aria-live="polite"></p>
+            <div class="measurement-strip"><div class="measurement-grid font-mono">
+                            <div class="bg-slate-950 px-2 py-1 rounded border border-slate-800 measurement-item">
+                                <span class="text-slate-400">Размах сигнала:</span>
+                                <span id="measDivY" class="text-emerald-400 font-bold">4.0 дел</span>
+                            </div>
+                            <div class="bg-slate-950 px-2 py-1 rounded border border-slate-800 measurement-item">
+                                <span class="text-slate-400">Период:</span>
+                                <span id="measDivX" class="text-cyan-400 font-bold">5.0 дел</span>
+                            </div>
+                            <div class="bg-slate-950 px-2 py-1 rounded border border-slate-800 measurement-item">
+                                <span class="text-slate-400">Фокус:</span>
+                                <span id="measLensInfo" class="text-sky-400 font-bold">Ø 1.0 мм</span>
+                            </div>
+                        </div><p>Учебная модель ЭЛТ. Размер пятна показан условно; положение пятна и направление отклонения связаны с напряжением пластин.</p></div>
+            <!-- Строка живой подсказки под схемой -->
+            <div class="mt-2 bg-slate-950/90 border border-slate-800 rounded-xl px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                    <span id="liveExplanationBar" class="text-slate-200 font-medium">
+                        Потяните ползунок R3 смещение «↕» (у УМ_Y) или R4 смещение «↔» (у УМ_X) прямо на схеме: движок реостата сдвинется, изменится потенциал пластин, луч в ЭЛТ изогнется, а проекционная линия перенесет точку на экран справа!
+                    </span>
+                </div>
+                <div class="flex items-center gap-3 font-mono text-[11px] text-slate-400">
+                    <span id="hudCoupling" class="text-emerald-400 font-bold">SA1 = 1 («=» Откр.)</span>
+                    <span>•</span>
+                    <span id="hudSyncBadge" class="text-amber-300 font-bold">SA2 = 1 (Внутр. синхр.)</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ======================================================================= -->
+        <!-- СЕКЦИЯ 2: СПРАВОЧНИК ПО ВЫБРАННОМУ УЗЛУ СХЕМЫ + КОНСПЕКТ И ТЕСТ          -->
+        <!-- ======================================================================= -->
+        <section class="grid grid-cols-1 xl:grid-cols-12 gap-4 items-start">
+            <!-- Карточка описания выбранного узла на схеме (4/12) -->
+            <div class="xl:col-span-4 bg-panel-800 border border-emerald-500/30 rounded-2xl p-4 shadow-xl flex flex-col justify-between min-h-[340px]">
+                <div>
+                    <div class="flex items-center justify-between gap-2 pb-2 border-b border-slate-800">
+                        <span id="nodeCardTag" class="px-2 py-0.5 text-xs font-mono font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            УЗЕЛ ЭЛО
+                        </span>
+                        <span class="text-xs text-slate-400 font-mono">Кликните любой блок на схеме</span>
+                    </div>
+                    <h3 id="nodeCardTitle" class="text-base font-bold text-white mt-2.5">
+                        Отклоняющие пластины Y и X
+                    </h3>
+                    <div id="nodeCardParams" class="mt-2 flex flex-wrap gap-1.5"></div>
+                    <div id="nodeCardBody" class="mt-3 text-xs sm:text-sm text-slate-300 space-y-2 leading-relaxed"></div>
+                    <p id="nodeCardGos620" class="gos620-card" hidden></p>
+                </div>
+
+                <div class="mt-4 pt-2.5 border-t border-slate-800">
+                    <div class="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-1.5">Быстрый выбор узла на схеме:</div>
+                    <div class="flex flex-wrap gap-1">
+                        <button onclick="selectNode('crt_plates')" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-700 text-[11px] text-slate-200 border border-slate-700">Пластины Y и X</button>
+                        <button onclick="selectNode('r1_brightness')" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-700 text-[11px] text-amber-300 border border-slate-700">R1 Яркость (М)</button>
+                        <button onclick="selectNode('r2_focus')" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-700 text-[11px] text-sky-300 border border-slate-700">R2 Фокус (А1–А2)</button>
+                        <button onclick="selectNode('um_y')" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-700 text-[11px] text-emerald-300 border border-slate-700">УМ_Y и R3 «↕»</button>
+                        <button onclick="selectNode('um_x')" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-700 text-[11px] text-cyan-300 border border-slate-700">УМ_X и R4 «↔»</button>
+                        <button onclick="selectNode('input_y_sa1')" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-700 text-[11px] text-slate-200 border border-slate-700">Вход Y / SA1 / C1</button>
+                        <button onclick="selectNode('sync_sa2')" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-700 text-[11px] text-slate-200 border border-slate-700">Синхронизация SA2</button>
+                        <button onclick="selectNode('sa3_switch')" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-700 text-[11px] text-slate-200 border border-slate-700">SA3 / Лиссажу</button>
+                        <button onclick="selectNode('calibrator')" class="px-2 py-1 rounded bg-slate-900 hover:bg-slate-700 text-[11px] text-slate-200 border border-slate-700">Калибратор</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Краткий конспект по методичке (4/12) -->
+            <div class="xl:col-span-4 bg-panel-800 border border-slate-700/80 rounded-2xl p-4 shadow-xl space-y-2.5 text-xs leading-relaxed">
+                <div class="flex items-center justify-between border-b border-slate-700/80 pb-2">
+                    <h2 class="text-sm sm:text-base font-bold text-white">Краткий конспект по методичке</h2>
+                    <span class="px-2 py-0.5 text-[10px] font-mono rounded bg-slate-900 text-emerald-400 border border-slate-700">Стр. 4–7</span>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5">
+                    <h3 class="font-bold text-amber-400 mb-1">Электронная пушка и фокусировка (R1, R2)</h3>
+                    <p class="text-slate-300"><strong>Блок питания (БП)</strong> обеспечивает накал и напряжения электродов. Нить накала <strong>НН (~6,3 В)</strong> нагревает катод <strong>К</strong>, который испускает электроны. Это термоэлектронная эмиссия. Модулятор <strong>М</strong> управляет током пучка: чем отрицательнее его потенциал относительно катода, тем меньше яркость. <strong>R1 («ЯРКОСТЬ»)</strong> задаёт потенциал М от 0 до −100 В относительно К.</p>
+                    <p class="text-slate-300 mt-2"><strong>R2 («ФОКУС»)</strong> меняет потенциал анода <strong>А1 (+300…+450 В)</strong> и фокусировку электростатической линзой. Анод <strong>А2 (+3500 В)</strong> ускоряет электроны. Электроды электронной пушки совместно формируют пучок, сфокусированный в небольшое пятно на экране.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5">
+                    <h3 class="font-bold text-emerald-400 mb-1">Канал Y (SA1, C1, Делитель, УМ_Y, R3)</h3>
+                    <p class="text-slate-300">Переключатель <strong>SA1</strong>: <strong>1 («=»)</strong> — открытый вход, C1 обойдён, проходят постоянная и переменная составляющие; <strong>2 («~»)</strong> — закрытый вход через C1, постоянная составляющая блокируется; <strong>3 («⊥»)</strong> — исследуемый сигнал отключён, вход усилителя соединён с общей точкой для определения нулевого уровня. Внешний источник не замыкается на корпус.</p>
+                    <p class="text-slate-300 mt-2">Чтобы увидеть действие <strong>C1</strong>, выберите опыт «Вход SA1» или задайте ненулевую <strong>U<sub>DC</sub></strong>. При переходе с «=» на «~» постоянное смещение исчезнет. Если U<sub>DC</sub> = 0, в данной модели форма сигнала останется прежней. В реальном входе AC очень низкие частоты также ослабляются.</p>
+                    <p class="text-slate-300 mt-2"><strong>Делитель</strong> ослабляет большие сигналы, <strong>усилитель-корректор Y</strong> предварительно усиливает их и передаёт сигнал внутренней синхронизации на SA2. Выходной <strong>УМ<sub>Y</sub></strong> подаёт напряжение на вертикальные пластины. Вместе они задают масштаб В/дел. <strong>R3 («↕»)</strong> сдвигает изображение вверх или вниз, меняя постоянную разность потенциалов пластин.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5">
+                    <h3 class="font-bold text-cyan-400 mb-1">Канал X, Синхронизация (SA2, SA3, R4)</h3>
+                    <p class="text-slate-300"><strong>Генератор развёртки (ГР)</strong> создаёт пилообразное напряжение. При прямом ходе луч равномерно движется слева направо; при быстром обратном ходе возвращается назад и гасится. <strong>SA2</strong> выбирает внутреннюю синхронизацию от канала Y (1) или внешнюю (2). Внешний согласованный сигнал тоже позволяет получить устойчивое изображение. В этой модели он не подаётся, поэтому положение 2 демонстрирует движение несинхронизированной осциллограммы.</p>
+                    <p class="text-slate-300 mt-2"><strong>SA3</strong> подаёт на <strong>УМ<sub>X</sub></strong> пилу от ГР (1) или сигнал входа X (2). Усилитель управляет горизонтальными пластинами; <strong>R4 («↔»)</strong> сдвигает изображение влево или вправо. В режиме X–Y частоты сравнивают по фигурам Лиссажу при известной опорной частоте. Для наблюдения вольт-амперной характеристики нужна внешняя цепь, преобразующая ток в напряжение.</p>
+                </div>
+                <div class="bg-slate-900/80 border border-slate-800 rounded-xl p-2.5">
+                    <h3 class="font-bold text-emerald-400 mb-1">Пластины, экран и калибратор</h3>
+                    <p class="text-slate-300">Пара <strong>Y</strong> отклоняет пучок по вертикали, пара <strong>X</strong> — по горизонтали. Электроны отклоняются к пластине с более высоким потенциалом относительно другой. При неизменной энергии электронов отклонение приблизительно пропорционально разности потенциалов. Люминофор экрана <strong>Э</strong> светится при попадании электронов. <strong>Аквадаг</strong> — проводящее покрытие внутри колбы. В показанной схеме его высокий положительный потенциал <strong>5…10 кВ</strong> обеспечивает доускорение пучка к экрану. Покрытие также собирает вторичные электроны, выбитые из люминофора при попадании основного пучка.</p>
+                    <p class="text-slate-300 mt-2"><strong>Калибратор</strong> выдаёт прямоугольный контрольный сигнал размахом <strong>2 В</strong> и частотой <strong>1 кГц</strong> для проверки вертикального и временного масштаба. Здесь выбраны уровни −1 и +1 В; размах 2 В сам по себе не требует именно этих уровней.</p>
+                </div>
+                <p class="theory-note"><strong>ЭЛО</strong> — электронно-лучевой осциллограф, весь прибор. <strong>ЭЛТ</strong> — электронно-лучевая трубка, создающая изображение. Напряжения сохранены по исходной учебной схеме и относятся к показанной модели; это не универсальные значения для всех трубок. Потенциал катода К принят за нулевой уровень отсчёта.</p>
+            </div>
+
+            <!-- Блок самопроверки знаний (4/12) -->
+            <div class="xl:col-span-4 bg-panel-800 border border-slate-700/80 rounded-2xl p-4 shadow-xl flex flex-col justify-between min-h-[340px]">
+                <div>
+                    <div class="flex items-center justify-between border-b border-slate-700/80 pb-2 mb-2.5">
+                        <h2 class="text-sm sm:text-base font-bold text-white">Самопроверка знаний</h2>
+                        <span id="quizScoreBadge" class="px-2 py-0.5 text-xs font-mono font-bold rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                            Вопрос 1 / 5
+                        </span>
+                    </div>
+
+                    <div id="quizContainer" class="space-y-2">
+                        <div id="quizQuestionText" class="text-xs font-semibold text-slate-100 bg-slate-900/90 p-2.5 rounded-xl border border-slate-800"></div>
+                        <div id="quizOptionsBox" class="space-y-1.5"></div>
+                        <div id="quizFeedbackBox" class="hidden p-2 rounded-xl text-xs leading-relaxed"></div>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-2 border-t border-slate-800 flex items-center justify-between">
+                    <button onclick="prevQuizQuestion()" class="px-3 py-1 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 transition">← Назад</button>
+                    <button onclick="nextQuizQuestion()" class="px-3 py-1 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition">Следующий вопрос →</button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer class="mt-4 border-t border-slate-800/80 bg-panel-900 py-2.5 px-4 text-center text-xs text-slate-500">
+        Интерактивный лабораторный стенд • «Назначение, принцип действия и устройство электронно-лучевого осциллографа (ЭЛО)»
+    </footer>
+
+    <!-- ======================================================================= -->
+    <!-- JAVASCRIPT: ПРИВЯЗКА ПОЛЗУНКОВ К РЕОСТАТАМ R1–R4, ЛУЧ В ЭЛТ И ЭКРАН Э    -->
+    <!-- ======================================================================= -->
+    <script>
+        // =========================================================================
+        // 1. СОСТОЯНИЕ СТЕНДА (STATE)
+        // =========================================================================
+        const state = {
+            labMode: 'slow',      // 'slow' | 'manual' | 'realtime'
+            beamSpeed: 0.85,
+            isoAngleDeg: 38,      // Угол 3D-изометрии ЭЛТ (0° — 2D разрез, 38° — 3D изометрия, до 52°)
+
+            // Реостаты электронной пушки ЭЛТ
+            r1PhiM: -20,          // Потенциометр R1 «яркость»: φ_M = 0 ... -100 В
+            r2PhiA1: 375,         // Потенциометр R2 «фокус»: φ_A1 = +300 ... +450 В (оптимум 375 В)
+            aquadagKv: 7.5,       // Аквадаг: 5.0 ... 10.0 кВ
+
+            // Входной сигнал канала Y
+            waveform: 'sine',     // 'sine' | 'calibrator' | 'triangle'
+            sigAmp: 2.0,          // Амплитуда U_m (В)
+            sigDc: 0.0,           // Постоянная составляющая U_DC (В)
+            sigFreq: 1000,        // Частота сигнала (Гц)
+
+            // Канал Y и реостат R3
+            sa1: 1,               // 1 ('=' откр.), 2 ('~' закр. C1), 3 ('⊥' φ=0)
+            voltsDiv: 1.0,        // Делитель напряжения (В/дел)
+            r3ShiftY: 0.0,        // Потенциометр R3 смещение «↕» (-3.2 ... +3.2 дел)
+
+            // Канал X, синхронизация и реостат R4
+            sa2: 1,               // 1 ('Внутр. 1'), 2 ('Внешн. 2')
+            sa3: 1,               // 1 (Генератор развертки), 2 (Вход X — Лиссажу)
+            timeDiv: 0.2,         // Развертка (мс/дел)
+            r4ShiftX: 0.0,        // Потенциометр R4 смещение «↔» (-4.2 ... +4.2 дел)
+
+            // Параметры фигур Лиссажу (при SA3 = 2)
+            lissajousNx: 1,
+            lissajousNy: 2,
+            lissajousPhaseDeg: 90,
+
+            // Анимация развертки и следа люминофора
+            frozen: false,
+            sweepProgress: 0.0,   // 0.0 ... 1.0
+            retraceMode: false,
+            unsyncDrift: 0.0,
+            trailPoints: [],
+            selectedNodeId: 'crt_plates'
+        };
+
+        // =========================================================================
+        // 2. СПРАВОЧНИК УЗЛОВ СХЕМЫ РИС. 1
+        // =========================================================================
+        const gos620Names = {
+            input_y_sa1: 'AC–GND–DC у CH1 и CH2: 1 («=») — DC; 2 («~») — AC; 3 («⊥») — GND. В обычной развёртке сигнал Y подают на выбранный канал.',
+            sync_sa2: 'SOURCE: CH1 или CH2 — внутренняя синхронизация; EXT — внешняя. Внешний сигнал подключают к TRIG IN.',
+            sa3_switch: 'X-Y — положение ручки TIME/DIV, отдельного SA3 на панели нет. В этом режиме CH1 (X) задаёт горизонталь, CH2 (Y) — вертикаль.',
+            r1_brightness: 'INTEN — регулировка яркости пятна или линии.',
+            r2_focus: 'FOCUS — настройка чёткости пятна или линии.',
+            um_y: 'POSITION ▲▼ соответствующего канала — вертикальное смещение (аналог R3). Усилитель УМ Y находится внутри прибора.',
+            um_x: 'POSITION ◀▶ в блоке HORIZONTAL — горизонтальное смещение (аналог R4). Усилитель УМ X находится внутри прибора.',
+            attenuator: 'VOLTS/DIV — масштаб В/дел выбранного канала; VAR — плавная подстройка. Делитель находится внутри прибора.',
+            sweep_gen: 'TIME/DIV — временной масштаб; SWP. VAR — плавная подстройка. Генератор развёртки находится внутри прибора.',
+            calibrator: 'CAL — выход прямоугольного контрольного сигнала 2 Vp-p, 1 kHz.',
+            power_supply: 'POWER — включение и выключение GOS-620. Блок питания находится внутри; эта подпись показывает соответствие по функции.'
+        };
+
+        function updateGos620Card() {
+            const card = document.getElementById('nodeCardGos620');
+            const text = gos620Names[state.selectedNodeId];
+            card.hidden = !document.getElementById('gos620Toggle').checked || !text;
+            card.textContent = text ? 'GOS-620: ' + text : '';
+        }
+
+        function setGos620Labels(enabled) {
+            enabled = Boolean(enabled);
+            document.getElementById('gos620Toggle').checked = enabled;
+            const layer = document.getElementById('gos620Labels');
+            layer.setAttribute('data-visible', String(enabled));
+            layer.setAttribute('aria-hidden', String(!enabled));
+            updateGos620Card();
+            try { localStorage.setItem('elt-gos620-labels', enabled ? '1' : '0'); } catch (_) {}
+        }
+
+        const schemaNodesData = {
+            crt_plates: {
+                tag: 'ЭЛТ • СИСТЕМА ОТКЛОНЕНИЯ',
+                title: 'Отклоняющие пластины вертикального (Y) и горизонтального (X) отклонения',
+                params: ['Пластины Y: от УМ_Y (R3 ↕)', 'Пластины X: от УМ_X (R4 ↔)'],
+                body: `
+                    <p>Две пары взаимно перпендикулярных пластин управляют траекторией электронного луча: <strong>вертикального отклонения Y</strong> и <strong>горизонтального отклонения X</strong>.</p>
+                    <p>Отрицательно заряженные электроны отклоняются к пластине с <strong>более высоким потенциалом относительно другой пластины</strong>. При неизменной энергии электронов отклонение приблизительно пропорционально разности потенциалов пластин. Знаки «+» и «−» показывают направление этой разности, а не обязательную полярность относительно корпуса.</p>
+                `
+            },
+            input_y_sa1: {
+                tag: 'КАНАЛ Y • ВХОДНАЯ ЦЕПЬ',
+                title: 'Вход Y, разделительный конденсатор C1 и переключатель SA1',
+                params: ['1: «=» (Открытый вход)', '2: «~» (Закрытый вход C1)', '3: «⊥» (Нулевой уровень входа усилителя)'],
+                body: `
+                    <p>Переключатель <strong>SA1</strong> задает три режима входной цепи канала Y. Для переключения выберите контакт 1, 2 или 3 на схеме:</p>
+                    <ul class="list-disc pl-4 space-y-1 text-slate-300">
+                        <li><strong>Положение 1 («=»):</strong> конденсатор C1 закорочен, проходят переменная и постоянная составляющие сигнала.</li>
+                        <li><strong>Положение 2 («~»):</strong> через конденсатор C1 проходит только переменная составляющая.</li>
+                        <li><strong>Положение 3 («⊥»):</strong> исследуемый сигнал отключён, вход усилителя Y соединён с общей точкой (φ = 0) для определения нулевого уровня. Внешний источник не замыкается на корпус.</li>
+                    </ul>
+                    <p>При ненулевой постоянной составляющей U<sub>DC</sub> переключение с «=» на «~» убирает смещение осциллограммы. При U<sub>DC</sub> = 0 разницы в этой модели не видно. В реальном канале AC низкие частоты также ослабляются.</p>
+                `,
+                onClickToggle: () => setSA1(state.sa1 === 3 ? 1 : state.sa1 + 1)
+            },
+            attenuator: {
+                tag: 'КАНАЛ Y • АТТЕНЮАТОР',
+                title: 'Входной делитель напряжения канала Y',
+                params: ['Цена деления по вертикали (В/дел)', 'Ступенчатое ослабление'],
+                body: `
+                    <p><strong>Делитель напряжения</strong> ослабляет входной сигнал и расширяет диапазон измеряемых амплитуд. Вместе с усилением канала и чувствительностью ЭЛТ он определяет масштаб по вертикали (В/дел). При измерении щупом также учитывают его коэффициент ослабления.</p>
+                `
+            },
+            amp_corrector: {
+                tag: 'КАНАЛ Y • ПРЕДУСИЛИТЕЛЬ',
+                title: 'Усилитель-корректор канала Y',
+                params: ['Усиление сигнала', 'Отбор сигнала внутр. синхронизации на SA2'],
+                body: `
+                    <p><strong>Усилитель-корректор канала Y</strong> предварительно усиливает сигнал. С него также отбирается сигнал внутренней синхронизации генератора развёртки через переключатель <strong>SA2 (положение 1 «Внутр.»)</strong>.</p>
+                `
+            },
+            um_y: {
+                tag: 'КАНАЛ Y • ВЫХОДНОЙ КАСКАД И РЕОСТАТ R3',
+                title: 'Усилитель мощности УМ_Y и потенциометр R3 смещение «↕»',
+                params: ['Выход на пластины Y', 'R3: вертикальное смещение луча'],
+                body: `
+                    <p>Выходной усилитель <strong>УМ<sub>Y</sub></strong> подключен непосредственно к пластинам вертикального отклонения Y. Потенциометр <strong>R3 («смещение ↕»)</strong> изменяет постоянную разность потенциалов на пластинах Y, смещая луч вверх или вниз.</p>
+                `
+            },
+            calibrator: {
+                tag: 'КОНТРОЛЬНЫЙ СИГНАЛ',
+                title: 'Калибратор амплитуды и длительности (2,0 В; 1,0 кГц)',
+                params: ['Меандр: размах 2,0 В', 'Частота 1,0 кГц'],
+                body: `
+                    <p><strong>Калибратор</strong> формирует прямоугольный контрольный сигнал размахом <strong>2,0 В</strong> и частотой <strong>1,0 кГц</strong> для проверки вертикального и временного масштаба.</p>
+                    <p>В этой модели выбраны уровни <strong>−1 и +1 В</strong>. Размах — разность максимального и минимального уровней; те же 2 В могли бы соответствовать уровням 0 и +2 В. Конкретные уровни и точность зависят от прибора.</p>
+                `,
+                onClickToggle: () => setWaveform(state.waveform === 'calibrator' ? 'sine' : 'calibrator')
+            },
+            power_supply: {
+                tag: 'ЭЛЕКТРОПИТАНИЕ ЭЛО',
+                title: 'Блок электрического питания (БП)',
+                params: ['~220 В; 50 Гц', '~6,3 В', '-100 В', '+450 В', '+3500 В', '5,0÷10,0 кВ'],
+                body: `
+                    <p><strong>Блок электрического питания</strong> обеспечивает питание всех каскадов ЭЛО и электродов ЭЛТ: накал НН (~6,3 В), модулятор М (0…−100 В через R1), фокусирующий анод А1 (+300…+450 В через R2), ускоряющий анод А2 (+3500 В) и аквадаг (5,0…10,0 кВ).</p>
+                    <p>Числа сохранены по исходной учебной схеме и относятся к показанной модели. Потенциал катода К принят за ноль; в других конструкциях значения и уровень отсчёта могут отличаться.</p>
+                `
+            },
+            r1_brightness: {
+                tag: 'РЕОСТАТ R1 • ЯРКОСТЬ ЛУЧА',
+                title: 'Потенциометр R1 «ЯРКОСТЬ» и Модулятор (М)',
+                params: ['φ_K = 0 В', 'φ_M = 0 … -100 В'],
+                body: `
+                    <p>Яркость светящегося пятна на экране Э регулируют потенциометром <strong>R1 («яркость»)</strong>, изменяя отрицательный потенциал модулятора <strong>(φ<sub>M</sub> = 0…-100 В)</strong> относительно катода <strong>(φ<sub>K</sub> = 0)</strong>.</p>
+                `
+            },
+            r2_focus: {
+                tag: 'РЕОСТАТ R2 • ФОКУСИРОВКА ЛУЧА',
+                title: 'Потенциометр R2 «ФОКУС» и Фокусирующий анод (А1)',
+                params: ['φ_A1 = +300 … +450 В', 'Электростатическая линза А1–А2'],
+                body: `
+                    <p>Фокусировка луча осуществляется потенциометром <strong>R2 («фокус»)</strong> путем изменения потенциала фокусирующего анода <strong>А1 (+300…+450 В)</strong>, что меняет фокусное расстояние электростатической линзы между анодами А1 и А2.</p>
+                `
+            },
+            crt_gun: {
+                tag: 'ЭЛТ • ЭЛЕКТРОННАЯ ПУШКА',
+                title: 'Нить накала (НН), Катод (К) и Модулятор (М)',
+                params: ['НН: ~6,3 В', 'Катод К: φ_K = 0', 'Модулятор М: 0…-100 В'],
+                body: `
+                    <p>Нить накала <strong>НН</strong> нагревает катод <strong>К</strong>, который испускает электроны. Это <strong>термоэлектронная эмиссия</strong>. Модулятор <strong>М</strong> управляет током пучка и участвует в его начальном формировании. Система электродов электронной пушки совместно формирует, ускоряет и фокусирует пучок.</p>
+                `
+            },
+            crt_lens: {
+                tag: 'ЭЛТ • ЭЛЕКТРОСТАТИЧЕСКАЯ ЛИНЗА',
+                title: 'Фокусирующий (А1) и Ускоряющий (А2) аноды',
+                params: ['А1: +300…+450 В', 'А2: +3500 В'],
+                body: `
+                    <p>Неоднородное электрическое поле между анодами <strong>А1 и А2</strong> работает как собирающая электростатическая линза, фокусируя электроны в тонкий луч на экране Э, а высокий потенциал <strong>А2 (+3500 В)</strong> разгоняет их.</p>
+                `
+            },
+            crt_screen_aquadag: {
+                tag: 'ЭЛТ • ЭКРАН И АКВАДАГ',
+                title: 'Люминофорный экран (Э) и Аквадаг (5,0 ÷ 10,0 кВ)',
+                params: ['Экран Э: свечение люминофора', 'Аквадаг: 5,0…10,0 кВ', 'Доускорение и сбор вторичных электронов'],
+                body: `
+                    <p>Экран электронно-лучевой трубки покрыт <strong>люминофором</strong>. При попадании электронов люминофор светится. <strong>Аквадаг</strong> — проводящее покрытие внутри колбы.</p>
+                    <p>В показанной схеме его положительный потенциал <strong>5,0…10,0 кВ</strong> обеспечивает <strong>доускорение</strong> электронного пучка к экрану. Покрытие также собирает <strong>вторичные электроны</strong>, выбитые из люминофора при попадании основного пучка.</p>
+                `
+            },
+            sync_sa2: {
+                tag: 'КАНАЛ X • СИНХРОНИЗАЦИЯ',
+                title: 'Переключатель рода синхронизации SA2',
+                params: ['1: Внутренняя (от канала Y)', '2: Внешняя (от клеммы Внешн.)'],
+                body: `
+                    <p>Переключатель <strong>SA2</strong> выбирает источник синхронизации генератора развёртки: <strong>1 — внутренняя</strong>, сигналом канала Y; <strong>2 — внешняя</strong>, отдельным согласованным сигналом. В обоих случаях при подходящих условиях можно получить устойчивую осциллограмму.</p>
+                    <p>В этой модели внешний синхронизирующий сигнал не подаётся, поэтому положение 2 демонстрирует смещение фазы: изображение «бежит». Нажатие на SA2 меняет положение переключателя.</p>
+                `,
+                onClickToggle: () => setSA2(state.sa2 === 1 ? 2 : 1)
+            },
+            sweep_gen: {
+                tag: 'КАНАЛ X • ГЕНЕРАТОР РАЗВЕРТКИ',
+                title: 'Генератор развертки (ГР)',
+                params: ['Пилообразное напряжение', 'Цена деления мс/дел'],
+                body: `
+                    <p><strong>Генератор развертки</strong> формирует линейно нарастающее пилообразное напряжение, которое равномерно разворачивает электронный луч слева направо по горизонтальной оси X.</p>
+                    <p>Затем следует быстрый обратный ход: луч возвращается к началу развёртки и в это время гасится, чтобы не оставлять обратный след.</p>
+                `
+            },
+            sa3_switch: {
+                tag: 'КАНАЛ X • ПЕРЕКЛЮЧАТЕЛЬ SA3 И ВХОД X',
+                title: 'Переключатель SA3 и Вход X (Фигуры Лиссажу)',
+                params: ['1: Пила от ГР (развертка y(t))', '2: Вход X (фигуры Лиссажу y=f(x))'],
+                body: `
+                    <p>В положении <strong>«1»</strong> ключ <strong>SA3</strong> подает на УМ<sub>X</sub> пилообразное напряжение от ГР. В положении <strong>«2»</strong> подключает <strong>Вход X</strong> для наблюдения зависимостей <em>y = f(x)</em> (измерение частот методом <strong>фигур Лиссажу</strong> и снятие ВАХ).</p>
+                    <p>Для определения частоты методом Лиссажу нужна известная опорная частота. Для наблюдения вольт-амперной характеристики нужна внешняя измерительная цепь, преобразующая ток в напряжение.</p>
+                `,
+                onClickToggle: () => setSA3(state.sa3 === 1 ? 2 : 1)
+            },
+            um_x: {
+                tag: 'КАНАЛ X • ВЫХОДНОЙ КАСКАД И РЕОСТАТ R4',
+                title: 'Усилитель мощности УМ_X и потенциометр R4 смещение «↔»',
+                params: ['Выход на пластины X', 'R4: горизонтальное смещение луча'],
+                body: `
+                    <p>Усилитель <strong>УМ<sub>X</sub></strong> питает пластины горизонтального отклонения X. Потенциометр <strong>R4 («смещение ↔»)</strong> изменяет постоянное смещение луча по горизонтали.</p>
+                `
+            }
+        };
+
+        // =========================================================================
+        // 3. ОБРАБОТЧИКИ УПРАВЛЕНИЯ И РЕОСТАТОВ R1, R2, R3, R4
+        // =========================================================================
+        function setLabMode(mode) {
+            state.labMode = mode;
+            state.trailPoints = [];
+
+            ['slow', 'manual', 'realtime'].forEach(m => {
+                const btn = document.getElementById('mode-btn-' + m);
+                if (!btn) return;
+                btn.setAttribute('aria-pressed', String(m === mode));
+                btn.className = m === mode
+                    ? 'px-2.5 py-1 rounded-lg text-xs font-semibold transition bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 flex items-center gap-1.5'
+                    : 'px-2.5 py-1 rounded-lg text-xs font-medium transition bg-slate-900 text-slate-300 border border-slate-700/80 hover:bg-slate-800';
+            });
+
+            const explainBar = document.getElementById('liveExplanationBar');
+            if (mode === 'slow') {
+                explainBar.textContent = 'Режим «Замедленная развертка»: смотрите, как пила с Генератора развертки на пластинах X ведет луч слева направо, а сигнал с УМ_Y на пластинах Y изгибает луч в ЭЛТ, вычерчивая волну на экране справа!';
+            } else if (mode === 'manual') {
+                explainBar.textContent = 'Режим «Ручной потенциал пластин»: двигайте ползунки на реостатах R3 «↕» (у УМ_Y) и R4 «↔» (у УМ_X) — луч в трубке отклоняется вслед за ползунками и перемещает пятно по экрану!';
+            } else {
+                explainBar.textContent = 'Режим «Быстрая развёртка»: быстрая развертка сливается на люминофоре экрана в непрерывную осциллограмму.';
+            }
+
+            updateUI();
+        }
+
+        function handleControlChange() {
+            state.r1PhiM = parseFloat(document.getElementById('r1Brightness').value);
+            state.r2PhiA1 = parseFloat(document.getElementById('r2Focus').value);
+            state.aquadagKv = parseFloat(document.getElementById('aquadagKv').value);
+            state.beamSpeed = parseFloat(document.getElementById('beamSpeedSlider').value);
+            const isoEl = document.getElementById('isoAngleSlider');
+            if (isoEl) state.isoAngleDeg = parseFloat(isoEl.value);
+
+            if (state.waveform !== 'calibrator') {
+                state.sigAmp = parseFloat(document.getElementById('sigAmp').value);
+                const freqEl = document.getElementById('sigFreqSlider');
+                if (freqEl) state.sigFreq = parseFloat(freqEl.value);
+            }
+            state.sigDc = parseFloat(document.getElementById('sigDc').value);
+
+            state.r3ShiftY = parseFloat(document.getElementById('r3ShiftY').value);
+            state.r4ShiftX = parseFloat(document.getElementById('r4ShiftX').value);
+
+            updateUI();
+        }
+
+        function setIsoAngle(deg) {
+            state.isoAngleDeg = deg;
+            const isoEl = document.getElementById('isoAngleSlider');
+            if (isoEl) isoEl.value = deg;
+            updateUI();
+        }
+
+        function setWaveform(wf) {
+            state.waveform = wf;
+            state.trailPoints = [];
+            if (wf === 'calibrator') {
+                state.sigAmp = 1.0; // размах 2,0 В (от -1 В до +1 В)
+                state.sigDc = 0.0;
+                state.sigFreq = 1000;
+                document.getElementById('sigAmp').value = 1.0;
+                document.getElementById('sigDc').value = 0.0;
+                const freqEl = document.getElementById('sigFreqSlider');
+                if (freqEl) freqEl.value = 1000;
+            }
+            updateUI();
+        }
+
+        function setSA1(pos) {
+            state.sa1 = pos;
+            state.trailPoints = [];
+            updateUI();
+        }
+
+        function setVoltsDiv(val) {
+            state.voltsDiv = val;
+            state.trailPoints = [];
+            updateUI();
+        }
+
+        function setSA2(pos) {
+            state.sa2 = pos;
+            updateUI();
+        }
+
+        function setSA3(pos) {
+            state.sa3 = pos;
+            state.trailPoints = [];
+            updateUI();
+        }
+
+        function setTimeDiv(val) {
+            state.timeDiv = val;
+            state.trailPoints = [];
+            updateUI();
+        }
+
+        function setLissajousRatio(nx, ny) {
+            state.lissajousNx = nx;
+            state.lissajousNy = ny;
+            state.trailPoints = [];
+            updateUI();
+        }
+
+        function resetR3() {
+            state.r3ShiftY = 0;
+            document.getElementById('r3ShiftY').value = 0;
+            updateUI();
+        }
+
+        function resetR4() {
+            state.r4ShiftX = 0;
+            document.getElementById('r4ShiftX').value = 0;
+            updateUI();
+        }
+
+        function clearScreenTrail() {
+            state.sweepProgress = 0;
+            state.unsyncDrift = 0;
+            state.trailPoints = [];
+        }
+
+        function toggleFreeze() {
+            state.frozen = !state.frozen;
+            updateUI();
+        }
+
+        function applyPreset(name) {
+            document.querySelectorAll('.preset-btn').forEach(b => {
+                b.className = 'preset-btn px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700';
+            });
+            const active = document.getElementById('preset-' + name);
+            if (active) {
+                active.className = 'preset-btn px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+            }
+
+            Object.assign(state, {
+                waveform: 'sine', sigAmp: 2, sigDc: 0, sigFreq: 1000,
+                sa1: 1, sa2: 1, sa3: 1, voltsDiv: 1, timeDiv: 0.2,
+                r1PhiM: -20, r2PhiA1: 375, aquadagKv: 7.5,
+                r3ShiftY: 0, r4ShiftX: 0, isoAngleDeg: 38, beamSpeed: 0.85,
+                lissajousNx: 1, lissajousNy: 2, lissajousPhaseDeg: 90,
+                trailPoints: [], frozen: false, sweepProgress: 0, unsyncDrift: 0, retraceMode: false
+            });
+            selectNode('crt_plates');
+
+            if (name === 'sine_slow') {
+                setLabMode('slow');
+                state.waveform = 'sine';
+                state.sigAmp = 2.0;
+                state.sigDc = 0.0;
+                state.sa1 = 1;
+                state.voltsDiv = 1.0;
+                state.sa2 = 1;
+                state.sa3 = 1;
+                state.timeDiv = 0.2;
+                state.r3ShiftY = 0.0;
+                state.r4ShiftX = 0.0;
+            } else if (name === 'manual_plates') {
+                setLabMode('manual');
+                state.r3ShiftY = 1.8;
+                state.r4ShiftX = 1.6;
+                selectNode('um_y');
+            } else if (name === 'calibrator') {
+                setLabMode('slow');
+                setWaveform('calibrator');
+                state.sa1 = 1;
+                state.voltsDiv = 0.5;
+                state.sa2 = 1;
+                state.sa3 = 1;
+                state.timeDiv = 0.2;
+                state.r3ShiftY = 0.0;
+                state.r4ShiftX = 0.0;
+                selectNode('calibrator');
+            } else if (name === 'dc_ac') {
+                setLabMode('slow');
+                state.waveform = 'sine';
+                state.sigAmp = 1.5;
+                state.sigDc = 1.5;
+                state.sa1 = 1;
+                state.voltsDiv = 1.0;
+                state.sa2 = 1;
+                state.sa3 = 1;
+                state.timeDiv = 0.2;
+                state.r3ShiftY = 0.0;
+                selectNode('input_y_sa1');
+            } else if (name === 'lissajous') {
+                setLabMode('slow');
+                state.waveform = 'sine';
+                state.sigAmp = 2.5;
+                state.sigDc = 0.0;
+                state.sa1 = 1;
+                state.voltsDiv = 1.0;
+                state.sa3 = 2;
+                state.lissajousNx = 1;
+                state.lissajousNy = 2;
+                selectNode('sa3_switch');
+            }
+
+            for (const [id, key] of Object.entries({sigFreqSlider:'sigFreq', aquadagKv:'aquadagKv', beamSpeedSlider:'beamSpeed', isoAngleSlider:'isoAngleDeg'})) {
+                document.getElementById(id).value = state[key];
+            }
+            document.getElementById('r1Brightness').value = state.r1PhiM;
+            document.getElementById('r2Focus').value = state.r2PhiA1;
+            document.getElementById('sigAmp').value = state.sigAmp;
+            document.getElementById('sigDc').value = state.sigDc;
+            document.getElementById('r3ShiftY').value = state.r3ShiftY;
+            document.getElementById('r4ShiftX').value = state.r4ShiftX;
+            updateUI();
+            if (active) {
+                active.setAttribute('aria-pressed','true');
+                active.className = 'preset-btn px-2 py-1 rounded-lg text-[11px] font-medium bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+            }
+        }
+
+        function selectNode(nodeId, skipToggle = false) {
+            state.selectedNodeId = nodeId;
+
+            document.querySelectorAll('.schema-node').forEach(el => el.classList.remove('active-node'));
+            const svgNode = document.getElementById('node-' + nodeId);
+            if (svgNode) svgNode.classList.add('active-node');
+
+            const data = schemaNodesData[nodeId] || schemaNodesData['crt_plates'];
+            document.getElementById('nodeCardTag').textContent = data.tag;
+            document.getElementById('nodeCardTitle').textContent = data.title;
+            document.getElementById('nodeCardBody').innerHTML = data.body;
+            document.getElementById('nodeCardParams').innerHTML = data.params.map(p =>
+                `<span class="px-2 py-0.5 text-xs font-mono rounded bg-slate-900 text-emerald-300 border border-slate-700">${p}</span>`
+            ).join('');
+            updateGos620Card();
+        }
+
+        // =========================================================================
+        // 4. СИНХРОНИЗАЦИЯ ДВИЖКОВ НА СХЕМЕ (R1, R2, R3, R4, SA1, SA2, SA3)
+        // =========================================================================
+        function updateUI() {
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.setAttribute('aria-pressed','false');
+                btn.className = 'preset-btn px-2 py-1 rounded-lg text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700';
+            });
+            const directionY = state.r3ShiftY > 0 ? 'вверх' : state.r3ShiftY < 0 ? 'вниз' : 'по центру';
+            const directionX = state.r4ShiftX > 0 ? 'вправо' : state.r4ShiftX < 0 ? 'влево' : 'по центру';
+            document.getElementById('crtObservation').textContent = state.r1PhiM <= -100
+                ? 'R1: модулятор запирает луч — светящееся пятно погасло.'
+                : state.labMode === 'manual'
+                    ? `Ручное отклонение: R3 — ${directionY}; R4 — ${directionX}. Электроны отклоняются к пластине с более высоким потенциалом. R2 задаёт чёткость пятна.`
+                    : 'Пластины Y отклоняют луч вверх и вниз; пластины X — по горизонтали. При обратном ходе луч гасится. Изображение луча и размер пятна условные.';
+            const freezeBtn = document.getElementById('freezeBtn');
+            freezeBtn.textContent = state.frozen ? '▶ Пуск' : '⏸ Пауза';
+            freezeBtn.setAttribute('aria-pressed', String(state.frozen));
+            document.getElementById('sigAmp').disabled = state.waveform === 'calibrator';
+            document.getElementById('sigFreqSlider').disabled = state.waveform === 'calibrator';
+            document.querySelectorAll('.ratio-btn').forEach(btn => {
+                btn.setAttribute('aria-pressed', String(state.sa3 === 2 && btn.dataset.ratio === `${state.lissajousNx}:${state.lissajousNy}`));
+            });
+            // Текстовые метки на ползунках реостатов
+            document.getElementById('r1ValLabel').textContent = `${state.r1PhiM}В`;
+            document.getElementById('r2ValLabel').textContent = `+${state.r2PhiA1}В`;
+            document.getElementById('aquadagValLabel').textContent = `${state.aquadagKv.toFixed(1).replace('.', ',')} кВ`;
+            document.getElementById('beamSpeedLabel').textContent = `${Number(state.beamSpeed.toFixed(2))}×`;
+            const isoLbl = document.getElementById('isoAngleLabel');
+            if (isoLbl) {
+                isoLbl.textContent = state.isoAngleDeg === 0 ? '0° (2D)' : `${state.isoAngleDeg}° 3D`;
+            }
+
+            document.getElementById('r3ValLabel').textContent = `${state.r3ShiftY >= 0 ? '+' : ''}${state.r3ShiftY.toFixed(1)}д`;
+            document.getElementById('r4ValLabel').textContent = `${state.r4ShiftX >= 0 ? '+' : ''}${state.r4ShiftX.toFixed(1)}д`;
+
+            // 1) Движок реостата R3 на схеме (x от 646 до 710)
+            const r3Norm = (state.r3ShiftY + 3.2) / 6.4; // 0..1
+            const r3WiperX = (646 + r3Norm * 64).toFixed(1);
+            document.getElementById('svgR3WiperLine').setAttribute('x1', r3WiperX);
+            document.getElementById('svgR3WiperLine').setAttribute('x2', r3WiperX);
+            document.getElementById('svgR3WiperHead').setAttribute('points', `${r3WiperX},65 ${r3WiperX - 4},72 ${Number(r3WiperX) + 4},72`);
+
+            // 2) Движок реостата R4 на схеме (x от 680 до 744)
+            const r4Norm = (state.r4ShiftX + 4.2) / 8.4; // 0..1
+            const r4WiperX = (680 + r4Norm * 64).toFixed(1);
+            document.getElementById('svgR4WiperLine').setAttribute('x1', r4WiperX);
+            document.getElementById('svgR4WiperLine').setAttribute('x2', r4WiperX);
+            document.getElementById('svgR4WiperHead').setAttribute('points', `${r4WiperX},553 ${r4WiperX - 4},560 ${Number(r4WiperX) + 4},560`);
+
+            // 3) Движок реостата R1 «яркость» на схеме (y от 294 при -100В до 340 при 0В)
+            const r1Norm = (state.r1PhiM + 100) / 100; // 0 при -100В, 1 при 0В
+            const r1WiperY = (294 + r1Norm * 46).toFixed(1);
+            document.getElementById('svgR1WiperWire').setAttribute('points', `432,${r1WiperY} 654,${r1WiperY} 654,302`);
+            document.getElementById('svgR1WiperHead').setAttribute('points', `432,${r1WiperY} 439,${r1WiperY - 4} 439,${Number(r1WiperY) + 4}`);
+
+            // 4) Движок реостата R2 «фокус» на схеме (y от 310 при +300В до 266 при +450В)
+            const r2Norm = (state.r2PhiA1 - 300) / 150; // 0..1
+            const r2WiperY = (310 - r2Norm * 44).toFixed(1);
+            document.getElementById('svgR2WiperWire').setAttribute('points', `530,${r2WiperY} 704,${r2WiperY} 704,302`);
+            document.getElementById('svgR2WiperHead').setAttribute('points', `530,${r2WiperY} 537,${r2WiperY - 4} 537,${Number(r2WiperY) + 4}`);
+
+            // Электростатическая линза А1–А2 на схеме
+            const lensEl = document.getElementById('svgElectroLens');
+            if (lensEl) {
+                const focusErr = Math.abs(state.r2PhiA1 - 375);
+                lensEl.setAttribute('rx', (14 + (focusErr / 75) * 10).toFixed(1));
+                lensEl.setAttribute('ry', (30 - (focusErr / 75) * 6).toFixed(1));
+            }
+
+            // Параметры входного сигнала Y и провод калибратора
+            document.getElementById('sigAmpLabel').textContent = `${state.sigAmp.toFixed(1)}В`;
+            document.getElementById('sigDcLabel').textContent = `${state.sigDc >= 0 ? '+' : ''}${state.sigDc.toFixed(1)}В`;
+            const freqLbl = document.getElementById('sigFreqLabel');
+            if (freqLbl) freqLbl.textContent = `${Number((state.sigFreq / 1000).toFixed(2))} кГц`;
+
+            ['sine', 'calibrator', 'triangle', 'saw'].forEach(wf => {
+                const btn = document.getElementById('wf-' + wf);
+                if (!btn) return;
+                btn.setAttribute('aria-pressed', String(state.waveform === wf));
+                btn.className = state.waveform === wf
+                    ? 'px-1.5 py-0.2 rounded bg-emerald-500/30 text-emerald-200 border border-emerald-500/50 font-mono'
+                    : 'px-1.5 py-0.2 rounded bg-slate-800 text-slate-300 font-mono';
+            });
+
+            const calWire = document.getElementById('calibratorJumperWire');
+            if (calWire) {
+                calWire.setAttribute('class', state.waveform === 'calibrator' ? 'signal-wire-active' : 'hidden');
+            }
+
+            // Ключ SA1 на схеме и подсветка кликабельных цифр 1, 2, 3
+            const sa1Arm = document.getElementById('svgSa1Arm');
+            if (sa1Arm) sa1Arm.setAttribute('y2', { 1: 105, 2: 125, 3: 148 }[state.sa1]);
+            [1, 2, 3].forEach(pos => {
+                const txt = document.getElementById('sa1Text' + pos);
+                const dot = document.getElementById('sa1Dot' + pos);
+                const hit = document.getElementById('sa1Hit' + pos);
+                const isActive = state.sa1 === pos;
+                if (txt) {
+                    txt.setAttribute('fill', isActive ? '#00ff9d' : '#cbd5e1');
+                    txt.setAttribute('font-weight', isActive ? '700' : '400');
+                }
+                if (dot) {
+                    dot.setAttribute('fill', isActive ? '#00ff9d' : '#475569');
+                    dot.setAttribute('r', isActive ? '3.5' : '2.5');
+                }
+                if (hit) {
+                    hit.setAttribute('fill', isActive ? 'rgba(0, 255, 157, 0.12)' : 'transparent');
+                }
+            });
+            const sa1Text = { 1: 'SA1 = 1 («=» Откр.)', 2: 'SA1 = 2 («~» Закр. C1)', 3: 'SA1 = 3 («⊥» φ=0)' };
+            document.getElementById('hudCoupling').textContent = sa1Text[state.sa1];
+
+            // Ключ SA2 на схеме
+            const sa2Arm = document.getElementById('svgSa2Arm');
+            if (sa2Arm) sa2Arm.setAttribute('y2', state.sa2 === 1 ? 548 : 586);
+            document.getElementById('hudSyncBadge').textContent = state.sa2 === 1
+                ? 'SA2 = 1 (Внутр. синхр. — стабильно)'
+                : 'SA2 = 2 (Внешн. без синхр. — бежит)';
+
+            // Ключ SA3 на схеме
+            const sa3Arm = document.getElementById('svgSa3Arm');
+            if (sa3Arm) sa3Arm.setAttribute('y2', state.sa3 === 1 ? 566 : 602);
+
+            // Кнопки Делителя (В/дел) и Развертки (мс/дел)
+            document.querySelectorAll('.vdiv-btn').forEach(btn => {
+                const v = parseFloat(btn.getAttribute('data-v'));
+                btn.className = Math.abs(v - state.voltsDiv) < 0.01
+                    ? 'vdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-emerald-500/25 text-emerald-300 border border-emerald-500/50 font-bold'
+                    : 'vdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-slate-900 text-slate-400 border border-slate-700';
+            });
+            document.querySelectorAll('.tdiv-btn').forEach(btn => {
+                const t = parseFloat(btn.getAttribute('data-t'));
+                btn.className = Math.abs(t - state.timeDiv) < 0.01
+                    ? 'tdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-cyan-500/25 text-cyan-300 border border-cyan-500/50 font-bold'
+                    : 'tdiv-btn flex-1 py-0.5 rounded text-[9px] font-mono bg-slate-900 text-slate-400 border border-slate-700';
+            });
+
+            // Численные показания под экраном
+            const effAmp = state.sa1 === 3 ? 0 : (state.waveform === 'calibrator' ? 1.0 : state.sigAmp);
+            const divY = (effAmp * 2) / state.voltsDiv;
+            const periodMs = 1000 / state.sigFreq;
+            const divX = periodMs / state.timeDiv;
+
+            document.getElementById('measDivY').textContent = state.labMode === 'manual' ? 'Ручное отклонение' : `${divY.toFixed(1)} дел · ${(effAmp * 2).toFixed(1)} В`;
+            document.getElementById('measDivX').textContent = state.labMode === 'manual' ? 'Без развёртки' : state.sa3 === 1 ? `${Number(divX.toFixed(2))} дел · ${Number(periodMs.toFixed(3))} мс` : `Лиссажу ${state.lissajousNx}:${state.lissajousNy}`;
+
+            const focusError = Math.abs(state.r2PhiA1 - 375);
+            const spotMm = (1.0 + (focusError / 75) * 4.5).toFixed(1);
+            document.getElementById('measLensInfo').textContent = focusError < 10 ? 'Чёткое пятно' : 'Размытое пятно';
+        }
+
+        // =========================================================================
+        // 5. ФИЗИЧЕСКАЯ МОДЕЛЬ ОТКЛОНЕНИЯ ЛУЧА И ПРОЕКЦИИ НА ЭКРАН СПРАВА
+        // =========================================================================
+        const SWEEP_RETRACE_START = 0.92;
+
+        function evalSignalVoltageY(tSec) {
+            if (state.sa1 === 3) return 0;
+            const omega = 2 * Math.PI * state.sigFreq;
+            const phase = omega * tSec;
+            const amp = state.waveform === 'calibrator' ? 1.0 : state.sigAmp;
+            let ac = 0;
+
+            if (state.waveform === 'sine') {
+                ac = amp * Math.sin(phase);
+            } else if (state.waveform === 'calibrator') {
+                ac = Math.sin(phase) >= 0 ? 1.0 : -1.0;
+            } else if (state.waveform === 'triangle') {
+                ac = (2 * amp / Math.PI) * Math.asin(Math.sin(phase));
+            } else if (state.waveform === 'saw') {
+                const cyc = ((tSec * state.sigFreq) % 1 + 1) % 1;
+                ac = amp * (2 * cyc - 1);
+            }
+
+            const dc = state.sa1 === 1 ? state.sigDc : 0;
+            return ac + dc;
+        }
+
+        function getSawWaveValue(s) {
+            const p = Math.max(0, Math.min(1, s));
+            if (p <= SWEEP_RETRACE_START) {
+                return {
+                    norm: (p / SWEEP_RETRACE_START) * 2 - 1,
+                    isRetrace: false,
+                    traceProgress: p / SWEEP_RETRACE_START
+                };
+            } else {
+                return {
+                    norm: 1 - ((p - SWEEP_RETRACE_START) / (1 - SWEEP_RETRACE_START)) * 2,
+                    isRetrace: true,
+                    traceProgress: 1 - (p - SWEEP_RETRACE_START) / (1 - SWEEP_RETRACE_START)
+                };
+            }
+        }
+
+        function getInstantDeflectionDivs(s) {
+            if (state.labMode === 'manual') {
+                return {
+                    divX: Math.max(-4.8, Math.min(4.8, state.r4ShiftX)),
+                    divY: Math.max(-3.8, Math.min(3.8, state.r3ShiftY)),
+                    isRetrace: false
+                };
+            }
+
+            const cols = 10;
+            const isSynced = state.sa2 === 1;
+            const totalScreenTimeSec = (cols * state.timeDiv) / 1000;
+            const driftTimeSec = (!isSynced && state.sa3 === 1) ? state.unsyncDrift : 0;
+
+            if (state.sa3 === 1) {
+                const saw = getSawWaveValue(s);
+                const rawDivX = saw.norm * 5.0 + state.r4ShiftX;
+                const divX = rawDivX;
+
+                const tSec = (s / SWEEP_RETRACE_START) * totalScreenTimeSec + driftTimeSec;
+                const uY = evalSignalVoltageY(tSec);
+                const rawDivY = (uY / state.voltsDiv) + state.r3ShiftY;
+                const divY = rawDivY;
+                return { divX, divY, isRetrace: saw.isRetrace };
+            } else {
+                const theta = s * 2 * Math.PI;
+                const deltaRad = (state.lissajousPhaseDeg * Math.PI) / 180;
+                const ampDivX = 3.6;
+
+                const rawDivX = ampDivX * Math.sin(state.lissajousNx * theta) + state.r4ShiftX;
+                const yTime = (state.lissajousNy * theta + deltaRad) / (2 * Math.PI * state.sigFreq);
+                const rawDivY = evalSignalVoltageY(yTime) / state.voltsDiv + state.r3ShiftY;
+                return {
+                    divX: rawDivX,
+                    divY: rawDivY,
+                    isRetrace: false
+                };
+            }
+        }
+
+        function getPlateXGraphPoint(s, W, H) {
+            const defl = getInstantDeflectionDivs(s);
+            const x = state.labMode === 'manual'
+                ? 180 + defl.divX * 36
+                : 14 + Math.max(0, Math.min(1, s)) * (W - 28);
+            const y = H / 2 - (defl.divX / 5.0) * (H * 0.38);
+            return { x, y, divX: defl.divX, divY: defl.divY, isRetrace: defl.isRetrace };
+        }
+
+        function getPlateYGraphPoint(s, W, H) {
+            const defl = getInstantDeflectionDivs(s);
+            const x = state.labMode === 'manual'
+                ? W / 2
+                : 14 + Math.max(0, Math.min(1, s)) * (W - 28);
+            const y = H / 2 - (defl.divY / 4.0) * (H * 0.38);
+            return { x, y, divY: defl.divY };
+        }
+
+        function projectCrt3D(z, x, y) {
+            const kIso = state.isoAngleDeg / 38.0;
+            const isoCos = 0.56 * kIso;
+            const isoSin = 0.32 * kIso;
+            return {
+                x: z + x * isoCos,
+                y: 350 - y + x * isoSin
+            };
+        }
+
+        const frontScreenCanvas = document.getElementById('frontScreenCanvas');
+        const fsCtx = frontScreenCanvas.getContext('2d');
+        const plateYCanvas = document.getElementById('plateYGraphCanvas');
+        const pyCtx = plateYCanvas.getContext('2d');
+        const plateXCanvas = document.getElementById('plateXGraphCanvas');
+        const pxCtx = plateXCanvas.getContext('2d');
+
+        function setupCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+            [
+                { c: frontScreenCanvas, ctx: fsCtx, w: 360, h: 288 },
+                { c: plateYCanvas, ctx: pyCtx, w: 360, h: 92 },
+                { c: plateXCanvas, ctx: pxCtx, w: 360, h: 92 }
+            ].forEach(item => {
+                item.c.width = item.w * dpr;
+                item.c.height = item.h * dpr;
+                item.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            });
+        }
+
+        function renderStep(frameScale = 1) {
+            const normBright = Math.max(0, (state.r1PhiM + 100) / 100);
+            const focusError = Math.abs(state.r2PhiA1 - 375);
+            const aquadagBoost = 0.85 + ((state.aquadagKv - 5.0) / 5.0) * 0.3;
+            const spotRadius = (2.8 + (focusError / 75) * 8.5) / Math.sqrt(aquadagBoost);
+
+            if (!state.frozen) {
+                if (state.sa2 === 2 && state.sa3 === 1) {
+                    state.unsyncDrift += 0.000045 * state.beamSpeed * frameScale;
+                }
+                if (state.labMode === 'slow') {
+                    const baseStep = 0.0034 * state.beamSpeed * frameScale;
+                    const step = (state.sa3 === 1 && state.sweepProgress > SWEEP_RETRACE_START)
+                        ? baseStep * 2.2
+                        : baseStep;
+                    state.sweepProgress += step;
+                    if (state.sweepProgress >= 1.0) {
+                        state.sweepProgress = 0.0;
+                    }
+                } else if (state.labMode === 'realtime') {
+                    state.sweepProgress = (state.sweepProgress + 0.022 * state.beamSpeed * frameScale) % 1.0;
+                }
+            }
+
+            const W = 360, H = 92;
+            const curXGraphPt = getPlateXGraphPoint(state.sweepProgress, W, H);
+            const clampedDivX = curXGraphPt.divX;
+            const clampedDivY = curXGraphPt.divY;
+            state.retraceMode = curXGraphPt.isRetrace;
+
+            const spotOnScreen = Math.abs(clampedDivX) <= 5 && Math.abs(clampedDivY) <= 4;
+            const plateYVolts = clampedDivY * 12.5;
+            const plateXVolts = clampedDivX * 10.0;
+
+            document.getElementById('plateYInstantBadge').textContent = `U_Y = ${plateYVolts >= 0 ? '+' : ''}${plateYVolts.toFixed(1)} В`;
+            document.getElementById('plateXInstantBadge').textContent = `U_X = ${plateXVolts >= 0 ? '+' : ''}${plateXVolts.toFixed(1)} В`;
+            document.getElementById('hudCoordXY').textContent = spotOnScreen ? `X: ${clampedDivX >= 0 ? '+' : ''}${clampedDivX.toFixed(1)}д, Y: ${clampedDivY >= 0 ? '+' : ''}${clampedDivY.toFixed(1)}д` : 'Пятно за границей экрана';
+
+            const deflReadout = document.getElementById('svg3dDeflectionText');
+            if (deflReadout) {
+                deflReadout.textContent = `3D луч: X=${clampedDivX >= 0 ? '+' : ''}${clampedDivX.toFixed(1)}д, Y=${clampedDivY >= 0 ? '+' : ''}${clampedDivY.toFixed(1)}д`;
+            }
+
+            // =====================================================================
+            // А. 3D-ИЗОМЕТРИЧЕСКАЯ ОТРИСОВКА ЭЛТ
+            // =====================================================================
+            const kIso = state.isoAngleDeg / 38.0;
+            const zScreen = 975;
+            const scaleX3d = 14.0;
+            const scaleY3d = 30.0;
+
+            const ringRx = Math.max(1.2, 9.0 * kIso);
+            const holeRx = Math.max(0.8, 3.6 * kIso);
+            document.getElementById('svgCathode3dRing').setAttribute('rx', Math.max(1.0, 5.0 * kIso).toFixed(1));
+            document.getElementById('svgModulator3dRing').setAttribute('rx', Math.max(1.2, 8.0 * kIso).toFixed(1));
+            document.getElementById('svgA1Ring3d').setAttribute('rx', ringRx.toFixed(1));
+            document.getElementById('svgA1Hole3d').setAttribute('rx', holeRx.toFixed(1));
+            document.getElementById('svgA2Ring3d').setAttribute('rx', ringRx.toFixed(1));
+            document.getElementById('svgA2Hole3d').setAttribute('rx', holeRx.toFixed(1));
+
+            const yTopFL = projectCrt3D(790, -22, 24), yTopFR = projectCrt3D(826, -22, 24);
+            const yTopNR = projectCrt3D(826,  22, 24), yTopNL = projectCrt3D(790,  22, 24);
+            document.getElementById('svgPlateYTop').setAttribute('points',
+                `${yTopFL.x.toFixed(1)},${yTopFL.y.toFixed(1)} ${yTopFR.x.toFixed(1)},${yTopFR.y.toFixed(1)} ${yTopNR.x.toFixed(1)},${yTopNR.y.toFixed(1)} ${yTopNL.x.toFixed(1)},${yTopNL.y.toFixed(1)}`);
+
+            const yBotFL = projectCrt3D(790, -22, -24), yBotFR = projectCrt3D(826, -22, -24);
+            const yBotNR = projectCrt3D(826,  22, -24), yBotNL = projectCrt3D(790,  22, -24);
+            document.getElementById('svgPlateYBot').setAttribute('points',
+                `${yBotFL.x.toFixed(1)},${yBotFL.y.toFixed(1)} ${yBotFR.x.toFixed(1)},${yBotFR.y.toFixed(1)} ${yBotNR.x.toFixed(1)},${yBotNR.y.toFixed(1)} ${yBotNL.x.toFixed(1)},${yBotNL.y.toFixed(1)}`);
+
+            const xFarTL = projectCrt3D(844, -32, 22), xFarTR = projectCrt3D(880, -32, 22);
+            const xFarBR = projectCrt3D(880, -32, -22), xFarBL = projectCrt3D(844, -32, -22);
+            document.getElementById('svgPlateXFar').setAttribute('points',
+                `${xFarTL.x.toFixed(1)},${xFarTL.y.toFixed(1)} ${xFarTR.x.toFixed(1)},${xFarTR.y.toFixed(1)} ${xFarBR.x.toFixed(1)},${xFarBR.y.toFixed(1)} ${xFarBL.x.toFixed(1)},${xFarBL.y.toFixed(1)}`);
+
+            const xNearTL = projectCrt3D(844, 32, 22), xNearTR = projectCrt3D(880, 32, 22);
+            const xNearBR = projectCrt3D(880, 32, -22), xNearBL = projectCrt3D(844, 32, -22);
+            document.getElementById('svgPlateXNear').setAttribute('points',
+                `${xNearTL.x.toFixed(1)},${xNearTL.y.toFixed(1)} ${xNearTR.x.toFixed(1)},${xNearTR.y.toFixed(1)} ${xNearBR.x.toFixed(1)},${xNearBR.y.toFixed(1)} ${xNearBL.x.toFixed(1)},${xNearBL.y.toFixed(1)}`);
+
+            [848, 862, 876].forEach((zF, idx) => {
+                const pFar = projectCrt3D(zF, -30, 0);
+                const pNear = projectCrt3D(zF, 30, 0);
+                const lineEl = document.getElementById('svgFieldX' + (idx + 1));
+                if (lineEl) {
+                    lineEl.setAttribute('x1', pFar.x.toFixed(1));
+                    lineEl.setAttribute('y1', pFar.y.toFixed(1));
+                    lineEl.setAttribute('x2', pNear.x.toFixed(1));
+                    lineEl.setAttribute('y2', pNear.y.toFixed(1));
+                }
+            });
+
+            const wireFarTarget = projectCrt3D(856, -32, -22);
+            const wireNearTarget = projectCrt3D(870, 32, -22);
+            document.getElementById('svgWireUmXFar').setAttribute('points', `782,578 ${wireFarTarget.x.toFixed(1)},578 ${wireFarTarget.x.toFixed(1)},${wireFarTarget.y.toFixed(1)}`);
+            document.getElementById('svgWireUmXNear').setAttribute('points', `782,602 ${wireNearTarget.x.toFixed(1)},602 ${wireNearTarget.x.toFixed(1)},${wireNearTarget.y.toFixed(1)}`);
+
+            // 3D-колба ЭЛТ: круглая цилиндрическая горловина + конический переход + прямоугольный экран «Э»
+            const scrRx = 72;
+            const scrRy = 120;
+
+            const baseRingRx = Math.max(2.5, 11.0 * kIso);
+            const neckRingRx = Math.max(3.0, 16.0 * kIso);
+            document.getElementById('svgCrtBaseRing').setAttribute('rx', baseRingRx.toFixed(1));
+            document.getElementById('svgCrtNeckRing').setAttribute('rx', neckRingRx.toFixed(1));
+
+            // 4 угла прямоугольного 3D-экрана «Э» на торце ЭЛТ
+            const scrTL = projectCrt3D(zScreen, -scrRx,  scrRy);
+            const scrTR = projectCrt3D(zScreen,  scrRx,  scrRy);
+            const scrBR = projectCrt3D(zScreen,  scrRx, -scrRy);
+            const scrBL = projectCrt3D(zScreen, -scrRx, -scrRy);
+
+            document.getElementById('svgIsoScreenFace').setAttribute('points',
+                `${scrTL.x.toFixed(1)},${scrTL.y.toFixed(1)} ${scrTR.x.toFixed(1)},${scrTR.y.toFixed(1)} ${scrBR.x.toFixed(1)},${scrBR.y.toFixed(1)} ${scrBL.x.toFixed(1)},${scrBL.y.toFixed(1)}`);
+
+            document.getElementById('isoScreenClipPolygon').setAttribute('points', document.getElementById('svgIsoScreenFace').getAttribute('points'));
+
+            // Внутренний прямоугольный контур сетки (половинный масштаб шкалы)
+            const inTL = projectCrt3D(zScreen, -scrRx * 0.5,  scrRy * 0.5);
+            const inTR = projectCrt3D(zScreen,  scrRx * 0.5,  scrRy * 0.5);
+            const inBR = projectCrt3D(zScreen,  scrRx * 0.5, -scrRy * 0.5);
+            const inBL = projectCrt3D(zScreen, -scrRx * 0.5, -scrRy * 0.5);
+            document.getElementById('svgIsoScreenInnerGrid').setAttribute('points',
+                `${inTL.x.toFixed(1)},${inTL.y.toFixed(1)} ${inTR.x.toFixed(1)},${inTR.y.toFixed(1)} ${inBR.x.toFixed(1)},${inBR.y.toFixed(1)} ${inBL.x.toFixed(1)},${inBL.y.toFixed(1)}`);
+
+            // Промежуточное сечение раструба (z = 932): плавный переход от круглой горловины к прямоугольному экрану
+            let midRingPath = '';
+            for (let i = 0; i <= 48; i++) {
+                const a = (i / 48) * Math.PI * 2;
+                const ca = Math.cos(a), sa = Math.sin(a);
+                const sx = Math.sign(ca) * Math.pow(Math.abs(ca), 0.55) * 46;
+                const sy = Math.sign(sa) * Math.pow(Math.abs(sa), 0.55) * 82;
+                const pm = projectCrt3D(932, sx, sy);
+                midRingPath += (i === 0 ? `M ${pm.x.toFixed(1)} ${pm.y.toFixed(1)}` : ` L ${pm.x.toFixed(1)} ${pm.y.toFixed(1)}`);
+            }
+            document.getElementById('svgCrtConeMidRing').setAttribute('d', midRingPath);
+
+            // Внешний контур стеклянной колбы ЭЛТ: круглая горловина переходит в прямоугольный раструб экрана
+            document.getElementById('svgCrt3dBody').setAttribute('d',
+                `M 580 302 L 885 302 C 906 302, 918 ${(scrTL.y + 12).toFixed(1)}, ${scrTL.x.toFixed(1)} ${scrTL.y.toFixed(1)} L ${scrTR.x.toFixed(1)} ${scrTR.y.toFixed(1)} L ${scrBR.x.toFixed(1)} ${scrBR.y.toFixed(1)} L ${scrBL.x.toFixed(1)} ${scrBL.y.toFixed(1)} C 918 ${(scrBL.y - 12).toFixed(1)}, 906 398, 885 398 L 580 398 A ${baseRingRx.toFixed(1)} 48 0 0 1 580 302 Z`);
+
+            // Ребра раструба от круглой горловины к 4 углам прямоугольного экрана
+            const corners3D = [
+                { a:  Math.PI * 0.75, scr: scrTL },
+                { a:  Math.PI * 0.25, scr: scrTR },
+                { a: -Math.PI * 0.25, scr: scrBR },
+                { a: -Math.PI * 0.75, scr: scrBL }
+            ];
+            let coneEdgesD = '';
+            corners3D.forEach(item => {
+                const pNeck = projectCrt3D(885, 28 * Math.cos(item.a), 48 * Math.sin(item.a));
+                coneEdgesD += `M ${pNeck.x.toFixed(1)} ${pNeck.y.toFixed(1)} L ${item.scr.x.toFixed(1)} ${item.scr.y.toFixed(1)} `;
+            });
+            document.getElementById('svgCrt3dConeEdges').setAttribute('d', coneEdgesD.trim());
+
+            // Слой аквадага вдоль внутренней поверхности раструба
+            document.getElementById('svgAquadagTop').setAttribute('d',
+                `M 884 306 C 905 306, 916 ${(scrTL.y + 20).toFixed(1)}, ${(scrTL.x - 4).toFixed(1)} ${(scrTL.y + 10).toFixed(1)}`);
+            document.getElementById('svgAquadagBot').setAttribute('d',
+                `M 884 394 C 905 394, 916 ${(scrBL.y - 20).toFixed(1)}, ${(scrBL.x - 4).toFixed(1)} ${(scrBL.y - 10).toFixed(1)}`);
+
+            const axisYTop = projectCrt3D(zScreen, 0, scrRy), axisYBot = projectCrt3D(zScreen, 0, -scrRy);
+            const axisXLeft = projectCrt3D(zScreen, -scrRx, 0), axisXRight = projectCrt3D(zScreen, scrRx, 0);
+            document.getElementById('svgIsoScreenAxisY').setAttribute('x1', axisYTop.x.toFixed(1));
+            document.getElementById('svgIsoScreenAxisY').setAttribute('y1', axisYTop.y.toFixed(1));
+            document.getElementById('svgIsoScreenAxisY').setAttribute('x2', axisYBot.x.toFixed(1));
+            document.getElementById('svgIsoScreenAxisY').setAttribute('y2', axisYBot.y.toFixed(1));
+
+            document.getElementById('svgIsoScreenAxisX').setAttribute('x1', axisXLeft.x.toFixed(1));
+            document.getElementById('svgIsoScreenAxisX').setAttribute('y1', axisXLeft.y.toFixed(1));
+            document.getElementById('svgIsoScreenAxisX').setAttribute('x2', axisXRight.x.toFixed(1));
+            document.getElementById('svgIsoScreenAxisX').setAttribute('y2', axisXRight.y.toFixed(1));
+
+            document.getElementById('svgIsoAxisXLabel').setAttribute('x', (axisXRight.x + 5).toFixed(1));
+            document.getElementById('svgIsoAxisXLabel').setAttribute('y', (axisXRight.y + 4).toFixed(1));
+            document.getElementById('svgIsoAxisYLabel').setAttribute('x', axisYTop.x.toFixed(1));
+            document.getElementById('svgIsoAxisYLabel').setAttribute('y', (axisYTop.y - 6).toFixed(1));
+            document.getElementById('svgIsoScreenLabelE').setAttribute('x', (scrTR.x + 6).toFixed(1));
+            document.getElementById('svgIsoScreenLabelE').setAttribute('y', (scrTR.y + 4).toFixed(1));
+
+            const target3dX = Math.max(-5, Math.min(5, clampedDivX)) * scaleX3d;
+            const target3dY = Math.max(-4, Math.min(4, clampedDivY)) * scaleY3d;
+
+            const pCathode = projectCrt3D(612, 0, 0);
+            const pEnterY  = projectCrt3D(790, 0, 0);
+            const yAtExitY = target3dY * ((826 - 808) / (zScreen - 808));
+            const pExitY   = projectCrt3D(826, 0, yAtExitY);
+            const yAtEnterX = target3dY * ((844 - 808) / (zScreen - 808));
+            const pEnterX  = projectCrt3D(844, 0, yAtEnterX);
+            const yAtExitX = target3dY * ((880 - 808) / (zScreen - 808));
+            const xAtExitX = target3dX * ((880 - 862) / (zScreen - 862));
+            const pExitX   = projectCrt3D(880, xAtExitX, yAtExitX);
+
+            const pScreenHit = projectCrt3D(zScreen, target3dX, target3dY);
+            const pScreenProjX = projectCrt3D(zScreen, target3dX, 0);
+            const pScreenProjY = projectCrt3D(zScreen, 0, target3dY);
+            const pScreenOrigin = projectCrt3D(zScreen, 0, 0);
+            const showAux = normBright > 0.02 && spotOnScreen && !state.retraceMode;
+            document.getElementById('svgIsoAxisYDot').setAttribute('opacity', showAux ? '1' : '0');
+            document.getElementById('svgIsoCoordBox').setAttribute('opacity', showAux ? '0.85' : '0');
+
+            document.getElementById('svgBeamShadowYZ').setAttribute('d',
+                `M ${pEnterY.x.toFixed(1)} ${pEnterY.y.toFixed(1)} L ${pScreenProjY.x.toFixed(1)} ${pScreenProjY.y.toFixed(1)}`);
+            document.getElementById('svgIsoAxisYDot').setAttribute('cx', pScreenProjY.x.toFixed(1));
+            document.getElementById('svgIsoAxisYDot').setAttribute('cy', pScreenProjY.y.toFixed(1));
+
+            document.getElementById('svgIsoCoordBox').setAttribute('points',
+                `${pScreenProjX.x.toFixed(1)},${pScreenProjX.y.toFixed(1)} ${pScreenHit.x.toFixed(1)},${pScreenHit.y.toFixed(1)} ${pScreenProjY.x.toFixed(1)},${pScreenProjY.y.toFixed(1)}`);
+
+            const isoWaveEl = document.getElementById('svgIsoWaveformPath');
+            if (state.labMode !== 'manual' && normBright > 0.02) {
+                const maxP = state.labMode === 'realtime'
+                    ? (state.sa3 === 1 ? SWEEP_RETRACE_START : 1.0)
+                    : (state.sa3 === 1 ? Math.min(state.sweepProgress, SWEEP_RETRACE_START) : state.sweepProgress);
+                const steps = 64;
+                let dIso = '';
+                for (let i = 0; i <= steps; i++) {
+                    const p = (i / steps) * maxP;
+                    const d = getInstantDeflectionDivs(p);
+                    const pt = projectCrt3D(zScreen, d.divX * scaleX3d, d.divY * scaleY3d);
+                    dIso += (i === 0 ? `M ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}` : ` L ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`);
+                }
+                isoWaveEl.setAttribute('d', dIso);
+                isoWaveEl.setAttribute('opacity', (normBright * 0.85).toFixed(2));
+            } else {
+                isoWaveEl.setAttribute('d', '');
+            }
+
+            const beamSpread = 2.0 + (focusError / 75) * 9.0;
+            const waistY = 1.5 + (focusError / 75) * 6.5;
+
+            const envPath = `M ${pCathode.x.toFixed(1)} ${pCathode.y.toFixed(1)} L 704 ${(350 - 9).toFixed(1)} L 752 ${(350 - waistY).toFixed(1)} L ${pEnterY.x.toFixed(1)} ${(pEnterY.y - waistY).toFixed(1)} L ${pEnterX.x.toFixed(1)} ${(pEnterX.y - beamSpread * 0.45).toFixed(1)} L ${pScreenHit.x.toFixed(1)} ${(pScreenHit.y - beamSpread).toFixed(1)} L ${pScreenHit.x.toFixed(1)} ${(pScreenHit.y + beamSpread).toFixed(1)} L ${pEnterX.x.toFixed(1)} ${(pEnterX.y + beamSpread * 0.45).toFixed(1)} L ${pEnterY.x.toFixed(1)} ${(pEnterY.y + waistY).toFixed(1)} L 752 ${(350 + waistY).toFixed(1)} L 704 ${(350 + 9).toFixed(1)} Z`;
+
+            const envEl = document.getElementById('svgBeamEnvelope');
+            const coreEl = document.getElementById('svgBeamCorePath');
+            const impactEl = document.getElementById('svgTubeImpactSpot');
+
+            envEl.setAttribute('d', envPath);
+            envEl.setAttribute('opacity', (normBright * (state.retraceMode ? 0 : 0.72)).toFixed(2));
+
+            coreEl.setAttribute('d',
+                `M ${pCathode.x.toFixed(1)} ${pCathode.y.toFixed(1)} L ${pEnterY.x.toFixed(1)} ${pEnterY.y.toFixed(1)} L ${pExitY.x.toFixed(1)} ${pExitY.y.toFixed(1)} L ${pEnterX.x.toFixed(1)} ${pEnterX.y.toFixed(1)} L ${pExitX.x.toFixed(1)} ${pExitX.y.toFixed(1)} L ${pScreenHit.x.toFixed(1)} ${pScreenHit.y.toFixed(1)}`);
+            coreEl.setAttribute('opacity', (normBright * (state.retraceMode ? 0 : 0.96)).toFixed(2));
+            coreEl.setAttribute('stroke-width', (2.0 + (focusError / 75) * 3.5).toFixed(1));
+
+            impactEl.setAttribute('cx', pScreenHit.x.toFixed(1));
+            impactEl.setAttribute('cy', pScreenHit.y.toFixed(1));
+            impactEl.setAttribute('r', (normBright > 0.02 && spotOnScreen && !state.retraceMode ? spotRadius * 1.15 : 0).toFixed(1));
+            impactEl.setAttribute('opacity', normBright.toFixed(2));
+
+            const topSignEl = document.getElementById('svgPlateYTopSign');
+            const botSignEl = document.getElementById('svgPlateYBotSign');
+            const fieldLinesEl = document.getElementById('svgPlateYFieldLines');
+            if (fieldLinesEl) {
+                fieldLinesEl.setAttribute('opacity', Math.min(0.85, 0.15 + Math.abs(plateYVolts) / 45).toFixed(2));
+            }
+            if (Math.abs(plateYVolts) < 1.0) {
+                topSignEl.textContent = '0В';
+                botSignEl.textContent = '0В';
+            } else if (plateYVolts > 0) {
+                topSignEl.textContent = `+${plateYVolts.toFixed(0)}В`;
+                botSignEl.textContent = '−';
+            } else {
+                topSignEl.textContent = '−';
+                botSignEl.textContent = `+${Math.abs(plateYVolts).toFixed(0)}В`;
+            }
+
+            const xFarSignEl = document.getElementById('svgPlateXFarSign');
+            const xNearSignEl = document.getElementById('svgPlateXNearSign');
+            const xFieldLinesEl = document.getElementById('svgPlateXFieldLines');
+            if (xFieldLinesEl) {
+                xFieldLinesEl.setAttribute('opacity', Math.min(0.9, 0.2 + Math.abs(plateXVolts) / 45).toFixed(2));
+            }
+            if (xFarSignEl && xNearSignEl) {
+                xFarSignEl.setAttribute('x', (xFarTR.x + 8).toFixed(1));
+                xFarSignEl.setAttribute('y', (xFarTL.y - 10).toFixed(1));
+                xNearSignEl.setAttribute('x', xNearBR.x.toFixed(1));
+                xNearSignEl.setAttribute('y', (xNearBR.y + 12).toFixed(1));
+                if (Math.abs(plateXVolts) < 1.0) {
+                    xFarSignEl.textContent = '0В';
+                    xNearSignEl.textContent = '0В';
+                } else if (plateXVolts > 0) {
+                    xFarSignEl.textContent = '−';
+                    xNearSignEl.textContent = `+${plateXVolts.toFixed(0)}В`;
+                } else {
+                    xFarSignEl.textContent = `+${Math.abs(plateXVolts).toFixed(0)}В`;
+                    xNearSignEl.textContent = '−';
+                }
+            }
+
+            // =====================================================================
+            // Б. ОБНОВЛЕНИЕ ПРОЕКЦИОННЫХ ЛИНИЙ И ЭКРАНА СПРАВА
+            // =====================================================================
+            const localSpotX = 180 + clampedDivX * 36;
+            const localSpotY = 144 - clampedDivY * 36;
+
+            const svgSpotScreenX = 1100 + localSpotX;
+            const svgSpotScreenY = 350 - clampedDivY * 36;
+
+            const svgSawDotX = 1100 + curXGraphPt.x;
+            const svgSawDotY = 538 + curXGraphPt.y;
+
+            const projY = document.getElementById('svgProjLineY');
+            const badgeY = document.getElementById('svgProjBadgeY');
+            const projX = document.getElementById('svgProjLineX');
+            const projDotXOverlay = document.getElementById('svgProjDotXOverlay');
+
+            projY.setAttribute('x1', pScreenHit.x.toFixed(1));
+            projY.setAttribute('y1', pScreenHit.y.toFixed(1));
+            projY.setAttribute('x2', svgSpotScreenX.toFixed(1));
+            projY.setAttribute('y2', svgSpotScreenY.toFixed(1));
+            projY.setAttribute('opacity', (showAux ? 0.85 : 0).toFixed(2));
+
+            badgeY.setAttribute('transform', `translate(1054, ${((pScreenHit.y + svgSpotScreenY) / 2).toFixed(1)})`);
+            badgeY.setAttribute('opacity', (showAux ? 0.95 : 0).toFixed(2));
+
+            projX.setAttribute('x1', svgSawDotX.toFixed(1));
+            projX.setAttribute('y1', svgSawDotY.toFixed(1));
+            projX.setAttribute('x2', svgSpotScreenX.toFixed(1));
+            projX.setAttribute('y2', svgSpotScreenY.toFixed(1));
+            projX.setAttribute('opacity', (showAux ? 0.85 : 0).toFixed(2));
+
+            projDotXOverlay.setAttribute('cx', svgSawDotX.toFixed(1));
+            projDotXOverlay.setAttribute('cy', svgSawDotY.toFixed(1));
+            projDotXOverlay.setAttribute('opacity', (showAux ? 1.0 : 0).toFixed(2));
+
+            // =====================================================================
+            // В. ОТРИСОВКА ФРОНТАЛЬНОГО ЭКРАНА ЭЛТ
+            // =====================================================================
+            const fsW = 360, fsH = 288, cell = 36;
+            fsCtx.fillStyle = '#03120c';
+            fsCtx.fillRect(0, 0, fsW, fsH);
+
+            fsCtx.strokeStyle = 'rgba(16, 185, 129, 0.16)';
+            fsCtx.lineWidth = 1;
+            fsCtx.beginPath();
+            for (let c = 1; c < 10; c++) {
+                fsCtx.moveTo(c * cell, 0);
+                fsCtx.lineTo(c * cell, fsH);
+            }
+            for (let r = 1; r < 8; r++) {
+                fsCtx.moveTo(0, r * cell);
+                fsCtx.lineTo(fsW, r * cell);
+            }
+            fsCtx.stroke();
+
+            fsCtx.strokeStyle = 'rgba(16, 185, 129, 0.38)';
+            fsCtx.lineWidth = 1.2;
+            fsCtx.beginPath();
+            fsCtx.moveTo(0, fsH / 2);
+            fsCtx.lineTo(fsW, fsH / 2);
+            fsCtx.moveTo(fsW / 2, 0);
+            fsCtx.lineTo(fsW / 2, fsH);
+            for (let x = 0; x <= fsW; x += cell / 5) {
+                fsCtx.moveTo(x, fsH / 2 - 3);
+                fsCtx.lineTo(x, fsH / 2 + 3);
+            }
+            for (let y = 0; y <= fsH; y += cell / 5) {
+                fsCtx.moveTo(fsW / 2 - 3, y);
+                fsCtx.lineTo(fsW / 2 + 3, y);
+            }
+            fsCtx.stroke();
+
+            if (normBright > 0.01) {
+                if (state.labMode === 'realtime') {
+                    fsCtx.save();
+                    fsCtx.strokeStyle = `rgba(0, 255, 157, ${(0.25 + normBright * 0.75).toFixed(2)})`;
+                    fsCtx.lineWidth = Math.max(1.5, spotRadius * 0.72);
+                    fsCtx.shadowColor = '#00ff9d';
+                    fsCtx.shadowBlur = 8 * normBright * aquadagBoost;
+                    fsCtx.lineJoin = 'round';
+                    fsCtx.beginPath();
+                    const maxPhase = state.sa3 === 1 ? SWEEP_RETRACE_START : 1.0;
+                    const steps = 180;
+                    for (let i = 0; i <= steps; i++) {
+                        const s = (i / steps) * maxPhase;
+                        const d = getInstantDeflectionDivs(s);
+                        const px = 180 + d.divX * 36;
+                        const py = 144 - d.divY * 36;
+                        if (i === 0) fsCtx.moveTo(px, py);
+                        else fsCtx.lineTo(px, py);
+                    }
+                    fsCtx.stroke();
+                    fsCtx.restore();
+                } else if (state.labMode === 'slow') {
+                    const maxPhase = state.sa3 === 1 ? Math.min(state.sweepProgress, SWEEP_RETRACE_START) : state.sweepProgress;
+                    const steps = 140;
+                    fsCtx.save();
+                    fsCtx.strokeStyle = `rgba(0, 255, 157, ${(0.2 + normBright * 0.75).toFixed(2)})`;
+                    fsCtx.lineWidth = Math.max(1.6, spotRadius * 0.72);
+                    fsCtx.shadowColor = '#00ff9d';
+                    fsCtx.shadowBlur = 7 * normBright * aquadagBoost;
+                    fsCtx.lineJoin = 'round';
+                    fsCtx.beginPath();
+                    for (let i = 0; i <= steps; i++) {
+                        const s = (i / steps) * maxPhase;
+                        const d = getInstantDeflectionDivs(s);
+                        const px = 180 + d.divX * 36;
+                        const py = 144 - d.divY * 36;
+                        if (i === 0) fsCtx.moveTo(px, py);
+                        else fsCtx.lineTo(px, py);
+                    }
+                    fsCtx.stroke();
+                    fsCtx.restore();
+                } else if (state.labMode === 'manual') {
+                    if (!state.frozen) {
+                        state.trailPoints.push({ x: localSpotX, y: localSpotY });
+                        if (state.trailPoints.length > 90) state.trailPoints.shift();
+                    }
+                    if (state.trailPoints.length > 1) {
+                        fsCtx.save();
+                        fsCtx.strokeStyle = `rgba(0, 255, 157, ${(0.35 * normBright).toFixed(2)})`;
+                        fsCtx.lineWidth = Math.max(1.4, spotRadius * 0.6);
+                        fsCtx.beginPath();
+                        state.trailPoints.forEach((p, idx) => {
+                            if (idx === 0) fsCtx.moveTo(p.x, p.y);
+                            else fsCtx.lineTo(p.x, p.y);
+                        });
+                        fsCtx.stroke();
+                        fsCtx.restore();
+                    }
+                }
+
+                fsCtx.save();
+                fsCtx.strokeStyle = 'rgba(0, 255, 157, 0.25)';
+                fsCtx.setLineDash([3, 3]);
+                fsCtx.beginPath();
+                fsCtx.moveTo(0, localSpotY);
+                fsCtx.lineTo(localSpotX, localSpotY);
+                fsCtx.moveTo(localSpotX, fsH);
+                fsCtx.lineTo(localSpotX, localSpotY);
+                fsCtx.stroke();
+                fsCtx.restore();
+
+                if (spotOnScreen && !state.retraceMode) {
+                fsCtx.save();
+                const glowGrad = fsCtx.createRadialGradient(localSpotX, localSpotY, 0.5, localSpotX, localSpotY, spotRadius * 3.2);
+                glowGrad.addColorStop(0, `rgba(236, 253, 245, ${normBright.toFixed(2)})`);
+                glowGrad.addColorStop(0.35, `rgba(0, 255, 157, ${(normBright * 0.85).toFixed(2)})`);
+                glowGrad.addColorStop(1, 'rgba(0, 255, 157, 0)');
+                fsCtx.fillStyle = glowGrad;
+                fsCtx.beginPath();
+                fsCtx.arc(localSpotX, localSpotY, spotRadius * 3.2, 0, Math.PI * 2);
+                fsCtx.fill();
+
+                fsCtx.fillStyle = `rgba(255, 255, 255, ${normBright.toFixed(2)})`;
+                fsCtx.beginPath();
+                fsCtx.arc(localSpotX, localSpotY, Math.max(1.6, spotRadius * 0.65), 0, Math.PI * 2);
+                fsCtx.fill();
+                fsCtx.restore();
+                }
+            }
+
+            // =====================================================================
+            // Г. ОТРИСОВКА ВЕРХНЕГО ГРАФИКА u_Y(t)
+            // =====================================================================
+            pyCtx.clearRect(0, 0, W, H);
+            pyCtx.strokeStyle = '#1e293b';
+            pyCtx.lineWidth = 1;
+            pyCtx.beginPath();
+            pyCtx.moveTo(0, H / 2);
+            pyCtx.lineTo(W, H / 2);
+            pyCtx.stroke();
+
+            const curYGraphPt = getPlateYGraphPoint(state.sweepProgress, W, H);
+
+            pyCtx.strokeStyle = '#10b981';
+            pyCtx.lineWidth = 2.0;
+            pyCtx.lineJoin = 'round';
+            pyCtx.beginPath();
+            if (state.labMode === 'manual') {
+                pyCtx.moveTo(14, curYGraphPt.y);
+                pyCtx.lineTo(W - 14, curYGraphPt.y);
+            } else {
+                const stepsY = 160;
+                for (let i = 0; i <= stepsY; i++) {
+                    const pt = getPlateYGraphPoint(i / stepsY, W, H);
+                    if (i === 0) pyCtx.moveTo(pt.x, pt.y);
+                    else pyCtx.lineTo(pt.x, pt.y);
+                }
+            }
+            pyCtx.stroke();
+
+            pyCtx.strokeStyle = 'rgba(16, 185, 129, 0.28)';
+            pyCtx.lineWidth = 1;
+            pyCtx.beginPath();
+            pyCtx.moveTo(0, curYGraphPt.y);
+            pyCtx.lineTo(W, curYGraphPt.y);
+            pyCtx.stroke();
+
+            pyCtx.fillStyle = '#00ff9d';
+            pyCtx.beginPath();
+            pyCtx.arc(curYGraphPt.x, curYGraphPt.y, 4.5, 0, Math.PI * 2);
+            pyCtx.fill();
+
+            // =====================================================================
+            // Д. ОТРИСОВКА НИЖНЕГО ГРАФИКА u_X(t)
+            // =====================================================================
+            pxCtx.clearRect(0, 0, W, H);
+            pxCtx.strokeStyle = '#1e293b';
+            pxCtx.lineWidth = 1;
+            pxCtx.beginPath();
+            pxCtx.moveTo(0, H / 2);
+            pxCtx.lineTo(W, H / 2);
+            pxCtx.stroke();
+
+            pxCtx.strokeStyle = '#22d3ee';
+            pxCtx.lineWidth = 2.2;
+            pxCtx.lineJoin = 'round';
+            pxCtx.beginPath();
+
+            if (state.labMode === 'manual') {
+                pxCtx.moveTo(14, curXGraphPt.y);
+                pxCtx.lineTo(W - 14, curXGraphPt.y);
+            } else if (state.sa3 === 1) {
+                const samplePhases = [];
+                for (let i = 0; i <= 92; i++) samplePhases.push((i / 92) * SWEEP_RETRACE_START);
+                for (let j = 1; j <= 16; j++) samplePhases.push(SWEEP_RETRACE_START + (j / 16) * (1 - SWEEP_RETRACE_START));
+
+                samplePhases.forEach((s, idx) => {
+                    const pt = getPlateXGraphPoint(s, W, H);
+                    if (idx === 0) pxCtx.moveTo(pt.x, pt.y);
+                    else pxCtx.lineTo(pt.x, pt.y);
+                });
+            } else {
+                const steps = 160;
+                for (let i = 0; i <= steps; i++) {
+                    const pt = getPlateXGraphPoint(i / steps, W, H);
+                    if (i === 0) pxCtx.moveTo(pt.x, pt.y);
+                    else pxCtx.lineTo(pt.x, pt.y);
+                }
+            }
+            pxCtx.stroke();
+
+            pxCtx.strokeStyle = 'rgba(34, 211, 238, 0.28)';
+            pxCtx.lineWidth = 1;
+            pxCtx.beginPath();
+            pxCtx.moveTo(0, curXGraphPt.y);
+            pxCtx.lineTo(W, curXGraphPt.y);
+            pxCtx.stroke();
+
+            pxCtx.fillStyle = '#22d3ee';
+            pxCtx.beginPath();
+            pxCtx.arc(curXGraphPt.x, curXGraphPt.y, 4.5, 0, Math.PI * 2);
+            pxCtx.fill();
+        }
+
+        let previousFrameTime = null;
+        function animationLoop(timestamp) {
+            const frameScale = previousFrameTime === null ? 1 : Math.min(3, Math.max(0, (timestamp - previousFrameTime) / (1000 / 60)));
+            previousFrameTime = timestamp;
+            renderStep(frameScale);
+            requestAnimationFrame(animationLoop);
+        }
+
+        // =========================================================================
+        // 6. ТЕСТ ДЛЯ САМОПРОВЕРКИ ЗНАНИЙ
+        // =========================================================================
+        const quizQuestions = [
+            {
+                q: '1. Как регулируют яркость светящегося пятна на экране ЭЛТ?',
+                options: [
+                    'Потенциометром R1 («ЯРКОСТЬ»), изменяя отрицательный потенциал модулятора М (φ_M = 0…-100 В) относительно катода К (φ_K = 0)',
+                    'Потенциометром R2 («ФОКУС»), изменяя потенциал первого анода А1 (+300…+450 В)',
+                    'Изменением напряжения накала НН (~6,3 В)',
+                    'Потенциометром R3 в усилителе мощности УМ_Y'
+                ],
+                correct: 0,
+                explanation: 'Верно! Яркость регулируют потенциометром R1 («ЯРКОСТЬ»), меняя отрицательный потенциал модулятора М (φ_M = 0…-100 В) относительно катода (φ_K = 0).'
+            },
+            {
+                q: '2. За счёт чего осуществляется фокусировка электронного луча в ЭЛТ?',
+                options: [
+                    'За счёт магнитного поля катушек отклонения',
+                    'Изменением фокусного расстояния электростатической линзы между анодами А1 и А2 при регулировке потенциала φ_A1 (+300…+450 В) потенциометром R2 («ФОКУС»)',
+                    'Изменением потенциала аквадага (5…10 кВ)',
+                    'С помощью конденсатора C1 на входе канала Y'
+                ],
+                correct: 1,
+                explanation: 'Верно! Электрическое поле между анодами А1 и А2 образует электростатическую собирающую линзу. Ручкой R2 «ФОКУС» меняют потенциал фокусирующего анода А1 (+300…+450 В).'
+            },
+            {
+                q: '3. Что происходит с сигналом, если переключатель SA1 на входе канала Y стоит в положении 2 («~» — закрытый вход)?',
+                options: [
+                    'Вход усилителя Y отключается от сигнала и соединяется с общей точкой (φ = 0)',
+                    'Конденсатор C1 закорочен, проходят переменная и постоянная составляющие',
+                    'Сигнал проходит через конденсатор C1, который не пропускает постоянную составляющую (проходят только переменные составляющие)',
+                    'Отключается генератор развертки в канале X'
+                ],
+                correct: 2,
+                explanation: 'Правильно! В положении 2 («~», закрытый вход) разделительный конденсатор C1 задерживает постоянную составляющую сигнала.'
+            },
+            {
+                q: '4. Какое напряжение формирует генератор развертки (ГР) в канале X и куда переключают SA3 для наблюдения фигур Лиссажу?',
+                options: [
+                    'ГР формирует синусоидальное напряжение; SA3 ставят в положение 1',
+                    'ГР формирует пилообразное напряжение; для наблюдения кривых вида y = f(x) (фигур Лиссажу) SA3 переводят в положение 2 (Вход X)',
+                    'ГР формирует прямоугольные импульсы 2,0 В, 1,0 кГц',
+                    'ГР формирует постоянное напряжение +3500 В'
+                ],
+                correct: 1,
+                explanation: 'Точно! Генератор развертки формирует пилообразное напряжение. А для получения фигур Лиссажу y = f(x) переключатель SA3 переводят в положение «2» (Вход X).'
+            },
+            {
+                q: '5. Каковы параметры сигнала встроенного Калибратора амплитуды и длительности?',
+                options: [
+                    'Синусоидальный сигнал 220 В, 50 Гц',
+                    'Прямоугольный сигнал (размах 2,0 В; частота 1,0 кГц) для проверки вертикального и временного масштаба',
+                    'Пилообразный сигнал 100 В',
+                    'Постоянное напряжение 6,3 В'
+                ],
+                correct: 1,
+                explanation: 'Калибратор формирует прямоугольный сигнал с размахом 2,0 В и частотой 1,0 кГц. В этой модели выбраны уровни −1 и +1 В; в других приборах те же 2 В размаха могут соответствовать другим уровням.'
+            }
+        ];
+
+        let currentQuizIdx = 0;
+
+        function renderQuizQuestion() {
+            const item = quizQuestions[currentQuizIdx];
+            document.getElementById('quizScoreBadge').textContent = `Вопрос ${currentQuizIdx + 1} / ${quizQuestions.length}`;
+            document.getElementById('quizQuestionText').textContent = item.q;
+
+            const feedbackBox = document.getElementById('quizFeedbackBox');
+            feedbackBox.className = 'hidden p-2 rounded-xl text-xs leading-relaxed';
+            feedbackBox.textContent = '';
+
+            document.getElementById('quizOptionsBox').innerHTML = item.options.map((optText, idx) => `
+                <button onclick="answerQuiz(${idx})" id="quiz-opt-${idx}" class="w-full text-left p-2 rounded-xl text-xs border bg-slate-900/70 border-slate-700/80 text-slate-200 hover:bg-slate-800 transition flex items-start gap-2">
+                    <span class="font-mono font-bold text-emerald-400 shrink-0">${idx + 1})</span>
+                    <span>${optText}</span>
+                </button>
+            `).join('');
+        }
+
+        function answerQuiz(selectedIdx) {
+            const item = quizQuestions[currentQuizIdx];
+            const feedbackBox = document.getElementById('quizFeedbackBox');
+
+            item.options.forEach((_, idx) => {
+                const btn = document.getElementById('quiz-opt-' + idx);
+                if (!btn) return;
+                if (idx === item.correct) {
+                    btn.className = 'w-full text-left p-2 rounded-xl text-xs border bg-emerald-500/20 border-emerald-500/50 text-emerald-200 font-medium flex items-start gap-2';
+                } else if (idx === selectedIdx) {
+                    btn.className = 'w-full text-left p-2 rounded-xl text-xs border bg-rose-500/20 border-rose-500/50 text-rose-200 flex items-start gap-2';
+                } else {
+                    btn.className = 'w-full text-left p-2 rounded-xl text-xs border bg-slate-900/40 border-slate-800 text-slate-500 flex items-start gap-2';
+                }
+            });
+
+            feedbackBox.className = selectedIdx === item.correct
+                ? 'p-2 rounded-xl text-xs leading-relaxed bg-emerald-500/15 border border-emerald-500/30 text-emerald-200 block'
+                : 'p-2 rounded-xl text-xs leading-relaxed bg-rose-500/15 border border-rose-500/30 text-rose-200 block';
+            feedbackBox.textContent = (selectedIdx === item.correct ? '✓ ' : '✗ ') + item.explanation.replace(/^(Верно!|Правильно!|Точно!)\s*/, '');
+        }
+
+        function nextQuizQuestion() {
+            currentQuizIdx = (currentQuizIdx + 1) % quizQuestions.length;
+            renderQuizQuestion();
+        }
+
+        function prevQuizQuestion() {
+            currentQuizIdx = (currentQuizIdx - 1 + quizQuestions.length) % quizQuestions.length;
+            renderQuizQuestion();
+        }
+
+        // =========================================================================
+        // 7. ЗАПУСК СТЕНДА
+        // =========================================================================
+        function initializeStand() {
+            const names = {r1Brightness:'R1: потенциал модулятора, яркость',r2Focus:'R2: потенциал анода А1, фокус',r3ShiftY:'R3: вертикальное отклонение Y',r4ShiftX:'R4: горизонтальное отклонение X',aquadagKv:'Потенциал аквадага, кВ',isoAngleSlider:'Угол обзора трубки',beamSpeedSlider:'Темп демонстрации',sigAmp:'Амплитуда входного сигнала, В',sigDc:'Постоянная составляющая входного сигнала, В',sigFreqSlider:'Частота входного сигнала, Гц'};
+            for (const [id,label] of Object.entries(names)) document.getElementById(id).setAttribute('aria-label',label);
+            document.querySelectorAll('.schema-node[id], .sa1-contact').forEach(node => {
+                const data = schemaNodesData[node.id.replace('node-','')];
+                node.setAttribute('role','button'); node.setAttribute('tabindex','0');
+                if (data) node.setAttribute('aria-label',data.title);
+                node.addEventListener('keydown', event => {
+                    if (event.key === 'Enter' || event.key === ' ') {event.preventDefault(); node.dispatchEvent(new MouseEvent('click',{bubbles:true}));}
+                });
+            });
+            setLabMode('slow');
+            setupCanvases();
+            selectNode('crt_plates');
+            applyPreset('dc_ac');
+            let showGos620 = false;
+            try { showGos620 = localStorage.getItem('elt-gos620-labels') === '1'; } catch (_) {}
+            setGos620Labels(showGos620);
+            renderQuizQuestion();
+            requestAnimationFrame(animationLoop);
+        }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeStand, {once:true});
+        else initializeStand();
+    </script>
+</body>
+</html>

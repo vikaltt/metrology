@@ -1,0 +1,2370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Виртуальный лабораторный стенд: Мультиметр MASTECH MY64</title>
+  <style>
+    :root {
+      --bg-page: #0f1318;
+      --holster-green: #0e6f48;
+      --holster-dark: #07472d;
+      --holster-highlight: #1ea36e;
+      --case-black: #1c1e22;
+      --panel-black: #17191c;
+      --lcd-on: #8d9c87;
+      --lcd-off: #667062;
+      --seg-on: #111810;
+      --seg-off: rgba(17, 24, 16, 0.075);
+      --mastech-blue: #0077c8;
+      --mastech-red: #e03c28;
+      --jack-red: #c82822;
+      --jack-black: #1f2226;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background: radial-gradient(circle at 50% 12%, #202731 0%, #0b0d12 100%);
+      color: #f1f5f9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Контейнер всего стенда на одном экране */
+    .trainer-stage {
+      position: relative;
+      width: 100%;
+      max-width: 420px;
+      padding: 6px 8px 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 7px;
+    }
+
+    /* Верхняя строка состояния и подсказок */
+    .diag-bar {
+      width: 100%;
+      height: 58px;
+      background: #1b2028;
+      border: 1.5px solid #2f3846;
+      border-left: 5px solid #0095d9;
+      border-radius: 11px;
+      padding: 6px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      box-shadow: 0 5px 14px rgba(0, 0, 0, 0.5);
+      z-index: 25;
+      overflow: hidden;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .diag-bar.ok {
+      border-left-color: #2ecc71;
+      background: #14281d;
+      border-color: #25613e;
+    }
+    .diag-bar.warn {
+      border-left-color: #f59f00;
+      background: #2b2111;
+      border-color: #6b4e17;
+    }
+    .diag-bar.error {
+      border-left-color: #ff3b30;
+      background: #381515;
+      border-color: #9e2a2a;
+      animation: alarmPulse 0.7s infinite alternate;
+    }
+    @keyframes alarmPulse {
+      from { box-shadow: 0 0 8px rgba(255, 59, 48, 0.45); }
+      to   { box-shadow: 0 0 22px rgba(255, 59, 48, 0.95); }
+    }
+
+    .diag-text {
+      font-size: 12px;
+      line-height: 1.3;
+      color: #f1f5f9;
+    }
+
+    .fuse-btn {
+      background: linear-gradient(180deg, #ff5252 0%, #c92a2a 100%);
+      color: #ffffff;
+      border: 1px solid #ffc9c9;
+      border-radius: 7px;
+      padding: 6px 9px;
+      font-size: 11px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+    }
+    .fuse-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* =====================================================================
+       ЗЕЛЁНЫЙ ЗАЩИТНЫЙ ЧЕХОЛ И ЧЁРНЫЙ КОРПУС MASTECH MY64 (КАК НА ФОТО)
+       ===================================================================== */
+    .holster-shell {
+      position: relative;
+      width: 100%;
+      max-width: 348px;
+      background: linear-gradient(145deg, #168055 0%, #0d6943 50%, #084c30 100%);
+      border-radius: 36px 36px 40px 40px;
+      padding: 13px 13px 15px;
+      border: 3px solid #053521;
+      box-shadow:
+        0 18px 36px rgba(0, 0, 0, 0.85),
+        inset 0 3px 5px rgba(255, 255, 255, 0.25),
+        inset 0 -6px 12px rgba(0, 0, 0, 0.7);
+      z-index: 10;
+    }
+
+    .holster-shell.shake {
+      animation: caseShake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes caseShake {
+      10%, 90% { transform: translate3d(-5px, 1px, 0) rotate(-0.8deg); }
+      20%, 80% { transform: translate3d(6px, -2px, 0) rotate(0.8deg); }
+      30%, 50%, 70% { transform: translate3d(-7px, 2px, 0) rotate(-1.2deg); }
+      40%, 60% { transform: translate3d(7px, -1px, 0) rotate(1.2deg); }
+    }
+
+    /* Верхние и нижние ребра зелёного защитного чехла */
+    .bumper-notches {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 22px;
+      pointer-events: none;
+    }
+    .bumper-notches.top { top: -5px; }
+    .bumper-notches.bottom { bottom: -5px; }
+    .bumper-rib {
+      width: 18px;
+      height: 6px;
+      background: linear-gradient(90deg, #064028, #198d5e, #064028);
+      border-radius: 4px;
+      border: 1px solid #042b1b;
+    }
+
+    /* Боковые ребра зелёного чехла */
+    .side-ribs {
+      position: absolute;
+      top: 155px;
+      bottom: 70px;
+      width: 7px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .side-ribs.left { left: -6px; }
+    .side-ribs.right { right: -6px; }
+    .side-rib {
+      width: 7px;
+      height: 17px;
+      background: linear-gradient(180deg, #063d26, #18895b, #053320);
+      border-radius: 3px;
+      box-shadow: 0 2px 3px rgba(0, 0, 0, 0.75);
+    }
+
+    /* Внутренний матово-чёрный корпус прибора */
+    .meter-inner-body {
+      background: linear-gradient(180deg, #25282c 0%, #1a1c20 40%, #15171a 100%);
+      border-radius: 24px 24px 28px 28px;
+      padding: 11px 11px 12px;
+      border: 2.5px solid #0d0e10;
+      box-shadow:
+        inset 0 2px 4px rgba(255, 255, 255, 0.12),
+        0 2px 6px rgba(0, 0, 0, 0.85);
+    }
+
+    /* Утопленная рамка ЖК-экрана */
+    .lcd-bezel {
+      background: linear-gradient(180deg, #16181b 0%, #22252a 100%);
+      border-radius: 13px;
+      padding: 11px 14px;
+      border: 2px solid #0e1012;
+      box-shadow:
+        inset 0 5px 12px rgba(0, 0, 0, 0.9),
+        0 1px 1px rgba(255, 255, 255, 0.1);
+      margin-bottom: 7px;
+    }
+
+    .lcd-glass {
+      position: relative;
+      height: 78px;
+      background: linear-gradient(170deg, #869680 0%, #96a690 55%, #7e8e78 100%);
+      border-radius: 5px;
+      border: 2.5px solid #353b33;
+      box-shadow:
+        inset 0 3px 8px rgba(0, 0, 0, 0.48),
+        inset 0 0 16px rgba(0, 0, 0, 0.22);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 4px 10px;
+      transition: background 0.2s ease;
+    }
+    .lcd-glass.off {
+      background: linear-gradient(170deg, #555e52 0%, #5e685a 100%);
+    }
+
+    /* Лицевая приборная панель под экраном */
+    .face-plate {
+      background: #1b1d21;
+      border-radius: 10px 10px 20px 20px;
+      border: 1.5px solid #101214;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.8);
+      padding: 7px 8px 9px;
+      position: relative;
+    }
+
+    /* Верхний ряд: кнопка ON/OFF, AUTO POWER OFF + гнездо hFE */
+    .upper-controls {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 0 2px;
+      margin-bottom: -4px;
+    }
+
+    .power-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 3px;
+    }
+
+    .red-power-btn {
+      width: 40px;
+      height: 17px;
+      border-radius: 9px;
+      background: linear-gradient(180deg, #ff4d4d 0%, #d62222 65%, #8c1111 100%);
+      border: 2px solid #0e1012;
+      box-shadow:
+        0 3px 5px rgba(0, 0, 0, 0.8),
+        inset 0 1.5px 2px rgba(255, 255, 255, 0.45);
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .red-power-btn.pressed {
+      transform: translateY(1.5px);
+      background: linear-gradient(180deg, #d92626 0%, #780e0e 100%);
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.9),
+        inset 0 2px 4px rgba(0, 0, 0, 0.65);
+    }
+
+    .on-off-sub {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 8.5px;
+      font-weight: 900;
+      color: var(--mastech-red);
+      letter-spacing: -0.2px;
+    }
+    .circle-i {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 1.3px solid #e2e8f0;
+      color: #e2e8f0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7.5px;
+      font-weight: 900;
+    }
+
+    /* Надпись AUTO POWER OFF */
+    .auto-power-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    .auto-power-label {
+      font-size: 9.5px;
+      font-weight: 900;
+      color: #0088e0;
+      letter-spacing: -0.2px;
+    }
+    .blue-t-icon {
+      width: 19px;
+      height: 19px;
+      background: #0077c8;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
+    }
+
+    /* Гнездо транзисторов hFE справа вверху */
+    .hfe-cluster {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hfe-row {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .ebce-col {
+      display: flex;
+      flex-direction: column;
+      font-size: 7.5px;
+      font-weight: 900;
+      color: var(--mastech-red);
+      line-height: 1.05;
+    }
+    .hfe-socket-disc {
+      width: 31px;
+      height: 31px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #c5ccd6 0%, #878e99 70%, #3d4147 100%);
+      border: 2.5px solid #0e1013;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pnp-npn-row {
+      display: flex;
+      gap: 11px;
+      font-size: 7.5px;
+      font-weight: 900;
+      color: #e2e8f0;
+      margin-top: 1px;
+    }
+
+    /* =====================================================================
+       КРУГОВОЙ ПЕРЕКЛЮЧАТЕЛЬ И ДОПОЛНИТЕЛЬНЫЕ РАЗЪЁМЫ (Cx, TEMP) НА ЛИЦЕВОЙ ПАНЕЛИ
+       ===================================================================== */
+    .dial-wrapper {
+      position: relative;
+      width: 100%;
+      height: 294px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+    }
+    .dial-svg {
+      width: 314px;
+      height: 294px;
+      overflow: visible;
+    }
+    .dial-pos-hit {
+      cursor: pointer;
+    }
+    .dial-pos-text {
+      font-family: "Roboto Condensed", "Arial Narrow", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 8.8px;
+      font-weight: 800;
+      fill: #f1f5f9;
+      pointer-events: none;
+      transition: fill 0.12s;
+      letter-spacing: -0.35px;
+    }
+    .dial-pos-text.active {
+      fill: #ffec4d;
+      font-weight: 900;
+      filter: drop-shadow(0 0 3px rgba(255, 236, 77, 0.8));
+    }
+    .dial-pos-dot {
+      fill: #e2e8f0;
+      pointer-events: none;
+    }
+    .dial-pos-dot.active {
+      fill: #ffec4d;
+      r: 3;
+    }
+    .cont-icon-group path,
+    .cont-icon-group polygon,
+    .cont-icon-group line,
+    .cont-icon-group ellipse {
+      stroke: #f1f5f9;
+      fill: #f1f5f9;
+      transition: all 0.12s;
+    }
+    .cont-icon-group.active path,
+    .cont-icon-group.active polygon,
+    .cont-icon-group.active line,
+    .cont-icon-group.active ellipse {
+      stroke: #ffec4d;
+      fill: #ffec4d;
+      filter: drop-shadow(0 0 3px rgba(255, 236, 77, 0.8));
+    }
+
+    /* =====================================================================
+       НИЖНИЙ БЛОК ИЗ 4 РАЗЪЁМОВ: 10A, mA, COM, VΩHz (ТОЧНО КАК НА MY64)
+       ===================================================================== */
+    .jacks-panel {
+      position: relative;
+      margin-top: 1px;
+      padding-top: 4px;
+      border-top: 1.5px solid #121417;
+    }
+
+    .jacks-titles {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      text-align: center;
+      font-size: 11.5px;
+      font-weight: 900;
+      margin-bottom: 3px;
+      align-items: center;
+    }
+    .j-title-red { color: var(--mastech-red); }
+    .j-title-com { color: #f8fafc; }
+
+    .jacks-sockets-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      justify-items: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .socket-well {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #0d0f12;
+      border: 3px solid #22252a;
+      box-shadow:
+        inset 0 3px 6px rgba(0, 0, 0, 0.95),
+        0 1px 2px rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .socket-ring {
+      width: 27px;
+      height: 27px;
+      border-radius: 50%;
+      border: 5.5px solid var(--jack-red);
+      background: #060708;
+      box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.95);
+    }
+    .socket-ring.com-ring {
+      border-color: #2f3338;
+    }
+    .socket-well.drop-target {
+      box-shadow: 0 0 15px #51cf66;
+      transform: scale(1.1);
+    }
+    .socket-well.plugged {
+      border-color: #4dabf7;
+    }
+
+    .jacks-markings-svg {
+      width: 100%;
+      height: 34px;
+      display: block;
+      margin-top: 1px;
+    }
+
+    /* Нижний шильдик MASTECH® MY64 в синей рамке */
+    .mastech-badge {
+      margin-top: 2px;
+      border: 1.8px solid var(--mastech-blue);
+      border-radius: 5px;
+      background: #16181c;
+      padding: 2px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mastech-logo {
+      color: var(--mastech-red);
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      font-family: "Arial Black", Impact, sans-serif;
+    }
+    .mastech-model {
+      color: #f8fafc;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      font-family: "Arial Black", Impact, sans-serif;
+    }
+
+    /* =====================================================================
+       НИЖНИЙ ИСПЫТАТЕЛЬНЫЙ СТОЛ С КЛЕММАМИ ДЛЯ ЩУПОВ
+       ===================================================================== */
+    .test-bench {
+      width: 100%;
+      max-width: 348px;
+      background: linear-gradient(180deg, #21262e 0%, #171a20 100%);
+      border: 2px solid #303744;
+      border-radius: 18px;
+      padding: 7px 8px 9px;
+      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.7);
+      z-index: 10;
+    }
+
+    .bench-tabs {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 4px;
+      margin-bottom: 6px;
+    }
+    .bench-tab {
+      background: #282e38;
+      color: #cbd5e1;
+      border: 1.5px solid #3b4352;
+      border-radius: 8px;
+      padding: 4px 2px;
+      font-size: 10px;
+      font-weight: 800;
+      text-align: center;
+      cursor: pointer;
+      line-height: 1.15;
+      transition: all 0.15s;
+    }
+    .bench-tab.active {
+      background: #0e6f48;
+      color: #ffffff;
+      border-color: #38d9a9;
+      box-shadow: 0 2px 8px rgba(14, 111, 72, 0.55);
+    }
+
+    .bench-board {
+      position: relative;
+      background: #13161b;
+      border: 1.5px solid #29303b;
+      border-radius: 12px;
+      padding: 6px 9px 8px;
+      min-height: 116px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .board-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+
+    .sub-toggle-btn {
+      background: #262c36;
+      color: #ffd43b;
+      border: 1px solid #4a5568;
+      border-radius: 6px;
+      padding: 3px 7px;
+      font-size: 10px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .sub-toggle-btn.danger {
+      background: #5c1919;
+      color: #ff8787;
+      border-color: #e03131;
+    }
+
+    .terminals-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 5px;
+      padding: 2px 4px;
+      position: relative;
+    }
+
+    .contact-post {
+      width: 64px;
+      height: 54px;
+      border-radius: 11px;
+      background: #20252e;
+      border: 2px solid #454f60;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.14s, border-color 0.14s, box-shadow 0.14s;
+    }
+    .contact-post.drop-target {
+      border-color: #51cf66;
+      box-shadow: 0 0 14px rgba(81, 207, 102, 0.75);
+      transform: scale(1.08);
+    }
+    .contact-post.connected {
+      border-color: #38d9a9;
+      background: #1b2826;
+    }
+
+    .brass-nut {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ffe066 0%, #f59f00 65%, #9c640c 100%);
+      border: 2px solid #4a3208;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.6), inset 0 1px 2px rgba(255, 255, 255, 0.6);
+      position: relative;
+    }
+    .brass-nut::after {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border-radius: 50%;
+      background: #2b2108;
+    }
+
+    .post-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      margin-top: 3px;
+      color: #e2e8f0;
+      text-align: center;
+      line-height: 1.05;
+    }
+
+    .part-visual {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .bench-tip {
+      font-size: 10px;
+      color: #94a3b8;
+      text-align: center;
+      margin-top: 4px;
+    }
+
+    /* =====================================================================
+       SVG-СЛОЙ ИНТЕРАКТИВНЫХ ПРОВОДОВ, ЩУПОВ И ИСКР
+       ===================================================================== */
+    .interactive-wires-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      touch-action: none;
+      z-index: 30;
+      overflow: visible;
+    }
+
+    .drag-node {
+      pointer-events: all;
+      cursor: grab;
+      touch-action: none;
+    }
+    .drag-node:active {
+      cursor: grabbing;
+    }
+    .interactive-wires-svg.is-manipulating [filter] { filter: none; }
+
+    /* Authentic faceplate stays compact; readable controls repeat its selected range. */
+    .trainer-stage { max-width: 1040px; padding: 20px 24px 30px; gap: 16px;
+      display: grid; grid-template-columns: 400px minmax(0, 1fr); align-items: start; }
+    .holster-shell { grid-column: 1; grid-row: 1 / span 5; max-width: 400px; }
+    .diag-bar { grid-column: 2; grid-row: 2; height: auto; min-height: 82px;
+      overflow: visible; flex-wrap: wrap; padding: 12px; }
+    .diag-text { font-size: 16px; line-height: 1.45; flex: 1 1 220px; }
+    .diag-bar.error { animation: none; }
+    .fuse-btn { font-size: 14px; padding: 10px; white-space: normal; }
+    .measurement-status { grid-column: 2; grid-row: 1; z-index: 40; background: #15221d;
+      border: 1px solid #3a6955; border-radius: 12px; padding: 12px; min-width: 0; }
+    .measurement-status output { display: block; font-size: 30px; font-variant-numeric: tabular-nums;
+      font-weight: 700; color: #d7f5d9; margin-bottom: 8px; }
+    .measurement-status label { display: block; font-size: 16px; }
+    select { color: #f1f5f9; background: #202b35; border: 1px solid #657589;
+      padding: 9px 6px; border-radius: 6px; font: inherit; max-width: 100%; min-width: 0; }
+    #rangeSelect { width: 100%; margin-top: 5px; font-size: 16px; }
+    button:focus-visible, select:focus-visible, summary:focus-visible, .dial-pos-hit:focus-visible {
+      outline: 3px solid #66d9ff; outline-offset: 3px; }
+    .test-bench { grid-column: 2; grid-row: 3; max-width: none; padding: 12px; }
+    .bench-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+    .bench-tab { min-height: 52px; font-size: 14px; padding: 6px; }
+    .bench-board { min-height: 195px; padding: 12px 8px; }
+    .board-header { flex-wrap: wrap; font-size: 16px; gap: 10px; }
+    .sub-toggle-btn { font-size: 14px; padding: 8px; white-space: normal; }
+    .contact-post { flex-shrink: 0; height: 84px; width: 85px; flex-direction: column-reverse; }
+    .post-label { font-size: 16px; line-height: 1.2; margin: 0 0 5px; white-space: nowrap; }
+    .terminals-row { gap: 5px; margin-top: 18px; padding: 4px 0; }
+    .part-visual { min-width: 0; }
+    .part-visual svg { max-width: 100%; }
+    .part-visual svg text { font-size: 16px; }
+    .part-visual span { font-size: 16px !important; }
+    .bench-tip { font-size: 14px; line-height: 1.4; }
+    .probe-parking { height: 78px; border-bottom: 1px dashed #465361; margin-bottom: 12px; }
+    .connection-controls { margin-top: 12px; font-size: 16px; }
+    .connection-controls summary, .model-notes summary { cursor: pointer; padding: 8px 0; }
+    .connection-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 10px 0; }
+    .connection-fields label { min-width: 0; }
+    .connection-fields select { display: block; width: 100%; margin-top: 4px; }
+    .model-notes { margin-top: 12px; font-size: 14px; line-height: 1.5; color: #b8c9d7; }
+    .jacks-titles { font-size: 16px; }
+    .dial-svg { touch-action: none; max-width: 100%; }
+    #rotaryTurntable, .dial-pos-hit { touch-action: none; }
+    .bench-board [data-lamp] { transition: fill .2s; }
+    @media (max-width: 850px) {
+      .trainer-stage { display: flex; max-width: 440px; padding: 10px 14px 25px; gap: 12px; }
+      .holster-shell { order: 0; max-width: 380px; }
+      .measurement-status { order: 1; width: 100%; position: sticky; top: 5px; }
+      .measurement-status output { font-size: 24px; margin-bottom: 4px; }
+      .measurement-status label { font-size: 14px; }
+      #rangeSelect { margin-top: 3px; padding: 6px; }
+      .diag-bar { order: 2; }
+      .test-bench { order: 3; width: 100%; }
+      .interactive-wires-svg { order: 4; }
+      .contact-post { width: 75px; }
+      .diag-text { font-size: 15px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; }
+    }
+
+  </style>
+<style id="publication-navigation-style">.publication-nav{box-sizing:border-box;position:relative;z-index:40;display:flex;flex-wrap:wrap;gap:8px 20px;padding:12px 16px;background:#edf4f1;color:#164e46;border-bottom:1px solid #bdcec7;font:600 14px/1.5 Arial,sans-serif}.publication-nav a{color:#164e46;text-decoration:underline;min-height:24px;display:inline-flex;align-items:center}.publication-nav a:focus-visible{outline:2px solid currentColor;outline-offset:3px}@media print{.publication-nav{display:none!important}}</style>
+</head>
+<body>
+<nav class="publication-nav" aria-label="Переходы по работе"><a href="../../index.html#practice">← Практические работы</a></nav>
+
+<div class="trainer-stage" id="trainerStage">
+
+  <!-- ВЕРХНЯЯ ПЛАШКА РЕЗУЛЬТАТА И ОШИБОК -->
+  <div class="diag-bar" id="diagBar">
+    <div class="diag-text" id="diagText" role="status" aria-live="polite">
+      Тяните пальцем <b>красный</b> и <b>чёрный</b> щупы на клеммы детали внизу, а ручкой выберите предел измерения.
+    </div>
+    <button class="fuse-btn" id="fuseReplaceBtn" style="display:none;" onclick="replaceBlownFuses()">
+      🔧 Восстановить прибор
+    </button>
+  </div>
+
+  <!-- ===================================================================
+       ЗЕЛЁНЫЙ ЗАЩИТНЫЙ ЧЕХОЛ И ЛИЦЕВАЯ ПАНЕЛЬ MASTECH MY64 (КАК НА ФОТО)
+       =================================================================== -->
+  <div class="holster-shell" id="multimeterCase">
+
+    <!-- Верхние и нижние выступы зелёного защитного чехла -->
+    <div class="bumper-notches top">
+      <div class="bumper-rib"></div><div class="bumper-rib"></div><div class="bumper-rib"></div>
+    </div>
+    <div class="bumper-notches bottom">
+      <div class="bumper-rib"></div><div class="bumper-rib"></div><div class="bumper-rib"></div>
+    </div>
+
+    <!-- Боковые противоскользящие рёбра чехла -->
+    <div class="side-ribs left">
+      <div class="side-rib"></div><div class="side-rib"></div><div class="side-rib"></div>
+      <div class="side-rib"></div><div class="side-rib"></div><div class="side-rib"></div>
+    </div>
+    <div class="side-ribs right">
+      <div class="side-rib"></div><div class="side-rib"></div><div class="side-rib"></div>
+      <div class="side-rib"></div><div class="side-rib"></div><div class="side-rib"></div>
+    </div>
+
+    <!-- Чёрный внутренний корпус мультиметра -->
+    <div class="meter-inner-body">
+
+      <!-- УТОПЛЕННЫЙ ЖК-ЭКРАН (3.5 РАЗРЯДА, 7 СЕГМЕНТОВ) -->
+      <div class="lcd-bezel">
+        <div class="lcd-glass" id="lcdGlass">
+          <svg role="img" aria-label="Мультиметр включён" id="lcdSvg" width="100%" height="70" viewBox="0 0 280 70"></svg>
+        </div>
+      </div>
+
+      <!-- ЛИЦЕВАЯ ПАНЕЛЬ УПРАВЛЕНИЯ MY64 -->
+      <div class="face-plate">
+
+        <!-- Верхний ряд: кнопка ON/OFF, AUTO POWER OFF, гнездо hFE -->
+        <div class="upper-controls">
+          <div class="power-block">
+            <button class="red-power-btn pressed" id="powerBtn" aria-label="Питание мультиметра" aria-pressed="true" onclick="togglePower()" title="Включить / Выключить мультиметр"></button>
+            <div class="on-off-sub">
+              <span>ON/OFF</span>
+              <span class="circle-i">I</span>
+            </div>
+          </div>
+
+          <div class="auto-power-group">
+            <span class="auto-power-label">AUTO POWER OFF</span>
+          </div>
+
+          <div class="hfe-cluster">
+            <div class="hfe-row">
+              <div class="ebce-col">
+                <span>E</span><span>B</span><span>C</span><span>E</span>
+              </div>
+              <div class="hfe-socket-disc">
+                <svg width="22" height="22" viewBox="0 0 22 22">
+                  <circle cx="11" cy="11" r="7.2" fill="none" stroke="#181a1d" stroke-width="2.2" stroke-dasharray="2 2.5" />
+                  <circle cx="11" cy="11" r="2" fill="#181a1d" />
+                </svg>
+              </div>
+              <div class="ebce-col">
+                <span>E</span><span>B</span><span>C</span><span>E</span>
+              </div>
+            </div>
+            <div class="pnp-npn-row">
+              <span>PNP</span><span>NPN</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- КРУГОВОЙ ПЕРЕКЛЮЧАТЕЛЬ И РАЗЪЁМЫ Cx / TEMP (ТОЧНАЯ КОПИЯ ФОТО MY64) -->
+        <div class="dial-wrapper">
+          <svg class="dial-svg" id="dialSvg" viewBox="0 0 314 294">
+            <defs>
+              <radialGradient id="turntableGrad" cx="36%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#3d4148" />
+                <stop offset="65%" stop-color="#24272c" />
+                <stop offset="100%" stop-color="#17191c" />
+              </radialGradient>
+              <linearGradient id="knobBarGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#4e535c" />
+                <stop offset="50%" stop-color="#2c2f36" />
+                <stop offset="100%" stop-color="#181a1e" />
+              </linearGradient>
+            </defs>
+
+            <!-- Слева внизу: CE, желтый треугольник IEC 61010 и колодка конденсаторов Cx -->
+            <text x="12" y="216" fill="#dcdfe6" font-size="13.5" font-weight="900">CE</text>
+            <polygon points="10,236 17,223 24,236" fill="#eab308" />
+            <text x="17" y="235" text-anchor="middle" fill="#111" font-size="8.5" font-weight="900">!</text>
+            <text x="28" y="229" fill="#dcdfe6" font-size="6.5" font-weight="800">IEC</text>
+            <text x="28" y="236" fill="#dcdfe6" font-size="6.5" font-weight="800">61010</text>
+
+            <!-- Разъём Cx (проверка ёмкости конденсаторов) слева внизу -->
+            <path d="M 20,262 L 20,256 L 36,256 M 54,256 L 70,256 L 70,262" fill="none" stroke="#e2e8f0" stroke-width="1.3" />
+            <text x="45" y="259" text-anchor="middle" fill="#e2e8f0" font-size="8.8" font-weight="900">Cx</text>
+            <rect x="14" y="264" width="62" height="13" rx="2" fill="#0d0e11" stroke="#2c3038" stroke-width="1.2" />
+            <rect x="20" y="268.5" width="19" height="4" fill="#25282e" />
+            <rect x="51" y="268.5" width="19" height="4" fill="#25282e" />
+
+            <!-- Знак РСТ (АЯ46) внизу правее центра -->
+            <g transform="translate(194, 254)">
+              <ellipse cx="12" cy="8" rx="10.5" ry="7" fill="none" stroke="#dcdfe6" stroke-width="1.3" />
+              <text x="12" y="11" text-anchor="middle" fill="#dcdfe6" font-size="8" font-weight="900">РСТ</text>
+              <text x="12" y="22" text-anchor="middle" fill="#dcdfe6" font-size="6.3" font-weight="800">АЯ46</text>
+            </g>
+
+            <!-- Справа внизу: надпись TEMP и зелёный разъём термопары К-типа -->
+            <text x="246" y="238" text-anchor="middle" fill="#e2e8f0" font-size="8" font-weight="900">TEMP</text>
+            <rect x="266" y="216" width="21" height="45" rx="2.5" fill="#18a558" stroke="#0b4f2a" stroke-width="1.5" />
+            <rect x="273.5" y="223" width="6" height="10.5" rx="1" fill="#1b1e22" />
+            <rect x="273.5" y="242" width="6" height="10.5" rx="1" fill="#1b1e22" />
+
+            <!-- Белые радиальные разделители секторов, точки, подписи секторов и 32 положения (рендерятся через JS) -->
+            <g id="dialScaleLayer"></g>
+
+            <!-- Увеличенное углубление под центральный барабан переключателя (центр cx=157, cy=136) -->
+            <circle cx="157" cy="136" r="74" fill="#121417" stroke="#0b0c0e" stroke-width="2.5" />
+
+            <!-- Увеличенный вращающийся барабан переключателя (0° = строго вверх на 12:00) -->
+            <g id="rotaryTurntable" transform="rotate(75, 157, 136)" style="cursor: grab;">
+              <circle cx="157" cy="136" r="70" fill="url(#turntableGrad)" stroke="#2e3238" stroke-width="1.5" />
+
+              <!-- Рифление на диске барабана параллельно ручке -->
+              <g stroke="#141619" stroke-width="2.2" opacity="0.9">
+                <line x1="136" y1="69" x2="136" y2="203" />
+                <line x1="141" y1="67" x2="141" y2="205" />
+                <line x1="146" y1="66" x2="146" y2="206" />
+                <line x1="168" y1="66" x2="168" y2="206" />
+                <line x1="173" y1="67" x2="173" y2="205" />
+                <line x1="178" y1="69" x2="178" y2="203" />
+              </g>
+
+              <!-- Центральная рукоятка переключателя (ориентирована на 12:00 при 0°) -->
+              <rect x="135" y="67" width="44" height="138" rx="4" fill="url(#knobBarGrad)" stroke="#101214" stroke-width="2" />
+              <line x1="139" y1="75" x2="139" y2="197" stroke="rgba(255,255,255,0.16)" stroke-width="1.4" stroke-linecap="round" />
+
+              <!-- Белый маркер-указатель на верхнем конце ручки (указывает строго на выбранную точку) -->
+              <rect x="153" y="72" width="8" height="12" rx="1" fill="#f8fafc" />
+            </g>
+          </svg>
+        </div>
+
+        <!-- НИЖНИЙ РЯД ИЗ 4 БАНАНОВЫХ ГНЁЗД: 10A, mA, COM, VΩHz -->
+        <div class="jacks-panel">
+          <div class="jacks-titles">
+            <span class="j-title-red">10A</span>
+            <span class="j-title-red">mA</span>
+            <span class="j-title-com">COM</span>
+            <span><b class="j-title-red">V</b><b style="color:#fff;">Ω</b><b class="j-title-red">Hz</b></span>
+          </div>
+
+          <div class="jacks-sockets-row">
+            <div class="socket-well" id="jack_10A" data-jack="10A" title="Гнездо 10A (до 20A кратковременно, без предохранителя)">
+              <div class="socket-ring"></div>
+            </div>
+            <div class="socket-well" id="jack_mA" data-jack="mA" title="Гнездо mA (до 200 мА, с предохранителем)">
+              <div class="socket-ring"></div>
+            </div>
+            <div class="socket-well" id="jack_COM" data-jack="COM" title="Общее гнездо COM (чёрный щуп)">
+              <div class="socket-ring com-ring"></div>
+            </div>
+            <div class="socket-well" id="jack_VO" data-jack="VO" title="Гнездо VΩHz (напряжение, сопротивление, частота, диоды)">
+              <div class="socket-ring"></div>
+            </div>
+          </div>
+
+          <!-- Точная разметка предупреждений и скобок под гнёздами как на фото MY64 -->
+          <svg class="jacks-markings-svg" viewBox="0 0 304 34">
+            <!-- Желтые треугольники между гнёздами -->
+            <g transform="translate(70, 0)">
+              <polygon points="0,11 6,0 12,11" fill="#eab308" />
+              <text x="6" y="10" text-anchor="middle" fill="#111" font-size="8" font-weight="900">!</text>
+            </g>
+            <g transform="translate(146, 0)">
+              <polygon points="0,11 6,0 12,11" fill="#eab308" />
+              <text x="6" y="10" text-anchor="middle" fill="#111" font-size="8" font-weight="900">!</text>
+            </g>
+            <g transform="translate(222, 0)">
+              <polygon points="0,11 6,0 12,11" fill="#eab308" />
+              <text x="6" y="10" text-anchor="middle" fill="#111" font-size="8" font-weight="900">!</text>
+            </g>
+
+            <!-- Скобки от 10A, mA и VΩHz к COM -->
+            <path d="M 36,13 L 36,30 L 186,30 L 186,13" fill="none" stroke="#e2e8f0" stroke-width="1.2" />
+            <path d="M 114,13 L 114,23 L 180,23 L 180,13" fill="none" stroke="#e2e8f0" stroke-width="1.2" />
+            <path d="M 194,13 L 194,25 L 268,25 L 268,13" fill="none" stroke="#e2e8f0" stroke-width="1.2" />
+
+            <text x="74" y="19" text-anchor="middle" fill="#f1f5f9" font-size="6.3" font-weight="800">20A 15SEC MAX</text>
+            <text x="74" y="27" text-anchor="middle" fill="#f1f5f9" font-size="6.5" font-weight="800">UNFUSED</text>
+
+            <text x="147" y="18" text-anchor="middle" fill="#f1f5f9" font-size="6.3" font-weight="800">200mA MAX</text>
+            <text x="147" y="26" text-anchor="middle" fill="#f1f5f9" font-size="6.5" font-weight="800">FUSED</text>
+
+            <text x="231" y="16" text-anchor="middle" fill="#f1f5f9" font-size="6" font-weight="800">CAT III 600V</text>
+            <text x="231" y="23" text-anchor="middle" fill="#f1f5f9" font-size="6" font-weight="800">CAT II 1000V</text>
+            <text x="231" y="31" text-anchor="middle" fill="#f1f5f9" font-size="6" font-weight="800">MAX 1000V</text>
+          </svg>
+
+          <!-- Шильдик MASTECH® MY64 -->
+          <div class="mastech-badge">
+            <span class="mastech-logo">MASTECH<sup style="font-size:8px;">®</sup></span>
+            <span class="mastech-model">MY64</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       НИЖНИЙ РАБОЧИЙ СТОЛ (ОБЪЕКТЫ ИЗМЕРЕНИЯ И КЛЕММЫ ДЛЯ ЩУПОВ)
+       =================================================================== -->
+  <div class="measurement-status" id="measurementStatus">
+    <output id="readingText" aria-label="Показание мультиметра">0,00 В</output>
+    <label for="rangeSelect">Режим и предел — шкала крупно</label>
+    <select id="rangeSelect" onchange="selectDialRange(Number(this.value))"></select>
+  </div>
+
+  <div class="test-bench">
+    <div class="bench-tabs">
+      <button class="bench-tab active" onclick="selectBenchObject('dc_batt', this)">🔋 U пост.<br>12В / 9В</button>
+      <button class="bench-tab" onclick="selectBenchObject('ac_mains', this)">🔌 U перем.<br>~220 В</button>
+      <button class="bench-tab" onclick="selectBenchObject('resistor', this)">⚡ Резистор<br>Ом (Ω)</button>
+      <button class="bench-tab" onclick="selectBenchObject('current_loop', this)">💡 Сила тока<br>мА / 10А</button>
+      <button class="bench-tab" onclick="selectBenchObject('diode_beep', this)">🔔 Диод /<br>Прозвонка</button>
+    </div>
+
+    <div class="bench-board" id="benchBoard"></div>
+
+    <div class="probe-parking" id="probeParking" aria-hidden="true"></div>
+    <details class="connection-controls" id="connectionControls">
+      <summary>Подключение без перетаскивания</summary>
+      <div class="connection-fields" id="connectionFields"></div>
+      <button class="sub-toggle-btn" onclick="disconnectProbes()">Снять оба щупа</button>
+    </details>
+    <button class="sub-toggle-btn" id="soundBtn" aria-pressed="true" onclick="toggleSound()">Звук включён</button>
+    <details class="model-notes"><summary>О модели прибора</summary>
+      Старый MY64: 700 В переменного напряжения, 20 мкФ, 1999 отсчётов.
+      Вольтметр имеет входное сопротивление 10 МОм. Расчёт учитывает шунты амперметра,
+      сопротивление проводов и влияние прибора на цепь. Для синусоидального сигнала показано действующее значение.
+      Источники и лампа учебные; сопротивление лампы принято постоянным.
+      Нагрев предохранителя и входа 10A рассчитывается с условными тепловыми порогами:
+      точное время повреждения конкретного прибора не воспроизводится.
+      Температура, hFE, частота и ёмкость — демонстрационные режимы с указанным образцом.
+    </details>
+
+    <div class="bench-tip">
+      👆 Тяните пальцем <b>красный</b> и <b>чёрный</b> щупы на клеммы детали или переставляйте <b>штекеры</b> в гнёздах
+    </div>
+  </div>
+
+  <!-- ===================================================================
+       ПОВЕРХНОСТНЫЙ SVG-СЛОЙ ДЛЯ ПРОВОДОВ, ЩУПОВ, ШТЕКЕРОВ И ИСКР КЗ
+       =================================================================== -->
+  <svg class="interactive-wires-svg" id="wiresSvg">
+    <defs>
+      <filter id="wireShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.72" />
+      </filter>
+    </defs>
+
+    <!-- Гибкий чёрный провод -->
+    <path id="blackCableOuter" d="" fill="none" stroke="#181a1e" stroke-width="6" stroke-linecap="round" filter="url(#wireShadow)" />
+    <path id="blackCableShine" d="" fill="none" stroke="#495057" stroke-width="1.4" stroke-linecap="round" />
+
+    <!-- Гибкий красный провод -->
+    <path id="redCableOuter" d="" fill="none" stroke="#c92a2a" stroke-width="6" stroke-linecap="round" filter="url(#wireShadow)" />
+    <path id="redCableShine" d="" fill="none" stroke="#ff8787" stroke-width="1.4" stroke-linecap="round" />
+
+    <!-- Чёрный штекер в гнезде мультиметра -->
+    <g id="blackPlugNode" class="drag-node" filter="url(#wireShadow)">
+      <circle r="24" fill="transparent" aria-hidden="true" />
+      <!-- Металлический штырёк «банан» (виден только когда штекер ВЫНУТ из гнезда) -->
+      <rect id="blackPlugPin" x="-3" y="-22" width="6" height="12" rx="2" fill="#ced4da" stroke="#495057" stroke-width="1" style="display:none;" />
+      <circle cx="0" cy="0" r="14" fill="#212529" stroke="#6c757d" stroke-width="2.4" />
+      <circle cx="0" cy="0" r="5.5" fill="#0b0c0e" />
+    </g>
+
+    <!-- Красный штекер в гнезде мультиметра -->
+    <g id="redPlugNode" class="drag-node" filter="url(#wireShadow)">
+      <circle r="24" fill="transparent" aria-hidden="true" />
+      <!-- Металлический штырёк «банан» (виден только когда штекер ВЫНУТ из гнезда) -->
+      <rect id="redPlugPin" x="-3" y="-22" width="6" height="12" rx="2" fill="#ced4da" stroke="#495057" stroke-width="1" style="display:none;" />
+      <circle cx="0" cy="0" r="14" fill="#d92626" stroke="#ffa8a8" stroke-width="2.4" />
+      <circle cx="0" cy="0" r="5.5" fill="#5c0b0b" />
+    </g>
+
+    <!-- ЧЁРНЫЙ ЩУП (перетаскивается пальцем на клеммы) -->
+    <g id="blackProbeNode" class="drag-node" filter="url(#wireShadow)">
+      <rect x="-24" y="-34" width="48" height="84" fill="transparent" aria-hidden="true" />
+      <line x1="0" y1="-26" x2="0" y2="-2" stroke="#dee2e6" stroke-width="3" stroke-linecap="round" />
+      <polygon points="-2,-24 2,-24 0,-31" fill="#f8f9fa" />
+      <rect x="-10" y="-4" width="20" height="5" rx="2.5" fill="#343a40" stroke="#6c757d" stroke-width="1" />
+      <rect x="-8" y="0" width="16" height="42" rx="6.5" fill="#212529" stroke="#868e96" stroke-width="1.6" />
+      <line x1="-5" y1="9" x2="5" y2="9" stroke="#495057" stroke-width="2" />
+      <line x1="-5" y1="16" x2="5" y2="16" stroke="#495057" stroke-width="2" />
+      <text x="0" y="31" text-anchor="middle" fill="#dee2e6" font-size="7.5" font-weight="900">COM</text>
+    </g>
+
+    <!-- КРАСНЫЙ ЩУП (перетаскивается пальцем на клеммы) -->
+    <g id="redProbeNode" class="drag-node" filter="url(#wireShadow)">
+      <rect x="-24" y="-34" width="48" height="84" fill="transparent" aria-hidden="true" />
+      <line x1="0" y1="-26" x2="0" y2="-2" stroke="#dee2e6" stroke-width="3" stroke-linecap="round" />
+      <polygon points="-2,-24 2,-24 0,-31" fill="#f8f9fa" />
+      <rect x="-10" y="-4" width="20" height="5" rx="2.5" fill="#a61e1e" stroke="#ff8787" stroke-width="1" />
+      <rect x="-8" y="0" width="16" height="42" rx="6.5" fill="#d92626" stroke="#ffc9c9" stroke-width="1.6" />
+      <line x1="-5" y1="9" x2="5" y2="9" stroke="#941515" stroke-width="2" />
+      <line x1="-5" y1="16" x2="5" y2="16" stroke="#941515" stroke-width="2" />
+      <text x="0" y="32" text-anchor="middle" fill="#ffffff" font-size="10.5" font-weight="900">+</text>
+    </g>
+
+    <!-- Слой для вспышек короткого замыкания и дыма -->
+    <g id="sparksLayer"></g>
+  </svg>
+
+</div>
+
+<script>
+  /**********************************************************************
+   * 1. ТОЧНАЯ ШКАЛА MASTECH MY64 ПО ФОТОГРАФИИ (РАВНОМЕРНЫЙ ШАГ 11° БЕЗ НАЕЗДОВ)
+   *    clockDeg = 0°   -> строго 12:00 (верх)
+   *    clockDeg = +90° -> строго 3:00 (справа)
+   *    clockDeg = 180° -> строго 6:00 (внизу)
+   *    clockDeg = 270° -> строго 9:00 (слева)
+   **********************************************************************/
+  const DIAL_RANGES = [
+    // 1. Прозвонка и диоды (между двумя белыми линиями слева вверху)
+    { id: 'CONT',      label: '➔|-',   mode: 'CONT', max: 2000,   decimals: 0, scale: 1,     angle: -52,   anchor: 'end',    r: 86, dx: -1, dy: 0, isContIcon: true },
+
+    // 2. Сектор сопротивления Ω (равномерная верхняя дуга: шаг 11°, края внутри рамок сектора)
+    { id: 'OHM_200',   label: '200',   mode: 'OHM',  max: 200,    decimals: 1, scale: 1,     angle: -39,   anchor: 'middle', r: 91, dx: 2,  dy: -2 },
+    { id: 'OHM_2K',    label: '2k',    mode: 'OHM',  max: 2,      decimals: 3, scale: 0.001, angle: -28,   anchor: 'middle', r: 91, dx: 0,  dy: -2 },
+    { id: 'OHM_20K',   label: '20k',   mode: 'OHM',  max: 20,     decimals: 2, scale: 0.001, angle: -17,   anchor: 'middle', r: 92, dx: -1, dy: -2 },
+    { id: 'OHM_200K',  label: '200k',  mode: 'OHM',  max: 200,    decimals: 1, scale: 0.001, angle: -6,    anchor: 'middle', r: 93, dx: -2, dy: -2 },
+    { id: 'OHM_2M',    label: '2M',    mode: 'OHM',  max: 2,      decimals: 3, scale: 1e-6,  angle: 5.5,   anchor: 'middle', r: 93, dx: 2,  dy: -2 },
+    { id: 'OHM_20M',   label: '20M',   mode: 'OHM',  max: 20,     decimals: 2, scale: 1e-6,  angle: 16.5,  anchor: 'middle', r: 92, dx: 2,  dy: -2 },
+    { id: 'OHM_200M',  label: '200M',  mode: 'OHM',  max: 200,    decimals: 1, scale: 1e-6,  angle: 27.5,  anchor: 'middle', r: 92, dx: -1, dy: -3 },
+
+    // 3. Сектор проверки транзисторов hFE (между двумя белыми линиями справа вверху)
+    { id: 'HFE',       label: 'hFE',   mode: 'HFE',  max: 1000,   decimals: 0, scale: 1,     angle: 41.5,  anchor: 'start',  r: 86, dx: 1,  dy: -1 },
+
+    // 4. Сектор постоянного напряжения V⎓ (справа вверху: 200m .. 1000)
+    { id: 'DCV_200M',  label: '200m',  mode: 'DCV',  max: 200,    decimals: 1, scale: 1000,  angle: 54.5,  anchor: 'start',  r: 85, dx: 1,  dy: -1 },
+    { id: 'DCV_2',     label: '2',     mode: 'DCV',  max: 2,      decimals: 3, scale: 1,     angle: 65,    anchor: 'start',  r: 85, dx: 1,  dy: 0 },
+    { id: 'DCV_20',    label: '20',    mode: 'DCV',  max: 20,     decimals: 2, scale: 1,     angle: 75.5,  anchor: 'start',  r: 85, dx: 1,  dy: 0 },
+    { id: 'DCV_200',   label: '200',   mode: 'DCV',  max: 200,    decimals: 1, scale: 1,     angle: 86,    anchor: 'start',  r: 85, dx: 1,  dy: 0 },
+    { id: 'DCV_1000',  label: '1000',  mode: 'DCV',  max: 1000,   decimals: 0, scale: 1,     angle: 96.5,  anchor: 'start',  r: 85, dx: 1,  dy: 0 },
+
+    // 5. Сектор переменного напряжения V~ (справа внизу: 700 .. 2)
+    { id: 'ACV_700',   label: '700',   mode: 'ACV',  max: 700,    decimals: 0, scale: 1,     angle: 109,   anchor: 'start',  r: 85, dx: 1,  dy: 1 },
+    { id: 'ACV_200',   label: '200',   mode: 'ACV',  max: 200,    decimals: 1, scale: 1,     angle: 119.5, anchor: 'start',  r: 85, dx: 1,  dy: 1 },
+    { id: 'ACV_20',    label: '20',    mode: 'ACV',  max: 20,     decimals: 2, scale: 1,     angle: 130,   anchor: 'start',  r: 85, dx: 1,  dy: 1 },
+    { id: 'ACV_2',     label: '2',     mode: 'ACV',  max: 2,      decimals: 3, scale: 1,     angle: 140.5, anchor: 'start',  r: 85, dx: 1,  dy: 1 },
+
+    // 6. Температура °C и Частота 20k Hz (снизу справа в своих секторах)
+    { id: 'TEMP_C',    label: '°C',    mode: 'TEMP', max: 1000,   decimals: 0, scale: 1,     angle: 152.5, anchor: 'middle', r: 92, dx: 2,  dy: 2 },
+    { id: 'FREQ_20K',  label: '20k',   mode: 'HZ',   max: 20,     decimals: 2, scale: 0.001, angle: 165,   anchor: 'middle', r: 94, dx: 1,  dy: 3 },
+
+    // 7. Сектор ёмкости конденсаторов F (нижняя дуга: 2n .. 20μ)
+    { id: 'CAP_2N',    label: '2n',    mode: 'CAP',  max: 2,      decimals: 3, scale: 1,     angle: 178,   anchor: 'middle', r: 93, dx: -1, dy: 3 },
+    { id: 'CAP_20N',   label: '20n',   mode: 'CAP',  max: 20,     decimals: 2, scale: 1,     angle: 189,   anchor: 'middle', r: 93, dx: -1, dy: 3 },
+    { id: 'CAP_200N',  label: '200n',  mode: 'CAP',  max: 200,    decimals: 1, scale: 1,     angle: 200.5, anchor: 'middle', r: 94, dx: -2, dy: 3 },
+    { id: 'CAP_2U',    label: '2μ',    mode: 'CAP',  max: 2,      decimals: 3, scale: 1,     angle: 211.5, anchor: 'middle', r: 93, dx: -2, dy: 3 },
+    { id: 'CAP_20U',   label: '20μ',   mode: 'CAP',  max: 20,     decimals: 2, scale: 1,     angle: 222,   anchor: 'middle', r: 92, dx: 1,  dy: 4 },
+
+    // 8. Сектор переменного тока A~ (слева внизу: 20m, 200m, 10)
+    { id: 'ACA_20M',   label: '20m',   mode: 'ACA',  max: 20,     decimals: 2, scale: 1000,  angle: 233.5, anchor: 'end',    r: 85, dx: -1, dy: 2 },
+    { id: 'ACA_200M',  label: '200m',  mode: 'ACA',  max: 200,    decimals: 1, scale: 1000,  angle: 244,   anchor: 'end',    r: 85, dx: -1, dy: 1 },
+    { id: 'ACA_10',    label: '10',    mode: 'ACA',  max: 20,     decimals: 2, scale: 1,     angle: 254.5, anchor: 'end',    r: 85, dx: -1, dy: 1 },
+
+    // 9. Сектор постоянного тока A⎓ (слева: 10, 200m, 20m, 2m)
+    { id: 'DCA_10',    label: '10',    mode: 'DCA',  max: 20,     decimals: 2, scale: 1,     angle: 266,   anchor: 'end',    r: 85, dx: -1, dy: 0 },
+    { id: 'DCA_200M',  label: '200m',  mode: 'DCA',  max: 200,    decimals: 1, scale: 1000,  angle: 276.5, anchor: 'end',    r: 85, dx: -1, dy: 0 },
+    { id: 'DCA_20M',   label: '20m',   mode: 'DCA',  max: 20,     decimals: 2, scale: 1000,  angle: 287,   anchor: 'end',    r: 85, dx: -1, dy: 0 },
+    { id: 'DCA_2M',    label: '2m',    mode: 'DCA',  max: 2,      decimals: 3, scale: 1000,  angle: 297.5, anchor: 'end',    r: 85, dx: -1, dy: -1 }
+  ];
+
+  // Белые радиальные разделительные линии между секторами (в системе clockDeg: 0° = 12:00)
+  const SECTOR_DIVIDER_ANGLES = [-58, -45.5, 35, 48, 102.8, 146.5, 158.8, 171.5, 227.8, 260.2];
+
+  // Обозначения секторов вокруг переключателя
+  const SECTOR_HEADERS = [
+    { text: 'Ω',   angle: -27, r: 112, color: '#ffffff', size: 14   },
+    { text: 'V⎓',  angle: 66,  r: 120, color: '#ffffff', size: 12.5 },
+    { text: 'V~',  angle: 120, r: 120, color: '#ffffff', size: 12.5 },
+    { text: 'Hz',  angle: 165, r: 116, color: '#e03c28', size: 10.5 },
+    { text: 'F',   angle: 201, r: 116, color: '#ffffff', size: 11.5 },
+    { text: 'A~',  angle: 238, r: 121, color: '#ffffff', size: 12.5 },
+    { text: 'A⎓',  angle: 285, r: 123, color: '#ffffff', size: 12.5 }
+  ];
+
+  /**********************************************************************
+   * 2. СОСТОЯНИЕ ТРЕНАЖЁРА
+   **********************************************************************/
+  const state = {
+    powerOn: true,
+    dialIdx: 11,            // По умолчанию: предел 20 V⎓
+    blackJack: 'COM',
+    redJack: 'VO',          // '10A' | 'mA' | 'COM' | 'VO'
+    blackTerm: null,        // 'L', 'R', 'M' или null
+    redTerm: null,
+    benchObject: 'dc_batt', // 'dc_batt' | 'ac_mains' | 'resistor' | 'current_loop' | 'diode_beep'
+    dcVoltageVal: 12.62,    // 12.62 В, 9.15 В или 48.5 В
+    resistorOhms: 4700,     // 470 Ом, 4700 Ом или 150000 Ом
+    resistorLivePower: false,
+    currentLoadAmps: 0.140, // 0.140 А (140 мА) или 4.85 А
+    diodeOrWire: 'diode',
+    fuse200mABlown: false,
+    soundEnabled: true,
+    currentAC: false,
+    fuseHeat: 0,
+    shuntHeat: 0,
+    shunt10ABlown: false
+  };
+
+  const coords = {
+    blackPlug:  { x: 0, y: 0 },
+    redPlug:    { x: 0, y: 0 },
+    blackProbe: { x: 82,  y: 595 },
+    redProbe:   { x: 266, y: 595 }
+  };
+
+  /**********************************************************************
+   * 3. ЗВУКОВЫЕ ЭФФЕКТЫ (ЩЕЛЧОК ПЕРЕКЛЮЧАТЕЛЯ, ПИЩАЛКА, ВЗРЫВ ПРЕДОХРАНИТЕЛЯ)
+   **********************************************************************/
+  let audioCtx = null;
+  let buzzerNode = null;
+
+  function initAudio() {
+    if (!audioCtx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) audioCtx = new AC();
+    }
+    if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+  }
+
+  function playMechanicalClick() {
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.03);
+      gain.gain.setValueAtTime(0.24, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.03);
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 0.035);
+    } catch (e) {}
+  }
+
+  function playShortCircuitBang() {
+    try {
+      initAudio();
+      if (!audioCtx) return;
+      const len = audioCtx.sampleRate * 0.32;
+      const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+      const ch = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) {
+        ch[i] = (Math.random() * 2 - 1) * Math.exp(-i / (audioCtx.sampleRate * 0.09));
+      }
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      const gain = audioCtx.createGain();
+      gain.gain.setValueAtTime(0.75, audioCtx.currentTime);
+      src.connect(gain);
+      gain.connect(audioCtx.destination);
+      src.start();
+    } catch (e) {}
+  }
+
+  function setBuzzerSound(active) {
+    try {
+      if (active && state.powerOn && state.soundEnabled && !document.hidden) {
+        initAudio();
+        if (!audioCtx || buzzerNode) return;
+        buzzerNode = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        buzzerNode.type = 'square';
+        buzzerNode.frequency.setValueAtTime(2450, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.055, audioCtx.currentTime);
+        buzzerNode.connect(gain);
+        gain.connect(audioCtx.destination);
+        buzzerNode.start();
+      } else if (buzzerNode) {
+        buzzerNode.stop();
+        buzzerNode.disconnect();
+        buzzerNode = null;
+      }
+    } catch (e) {}
+  }
+
+  /**********************************************************************
+   * 4. СЕМИСЕГМЕНТНЫЙ ЖК-ЭКРАН (3½ РАЗРЯДА, БЕЗ ВЫДУМАННЫХ НАДПИСЕЙ)
+   **********************************************************************/
+  const DIGIT_SEGMENTS = {
+    '0': [1,1,1,1,1,1,0],
+    '1': [0,1,1,0,0,0,0],
+    '2': [1,1,0,1,1,0,1],
+    '3': [1,1,1,1,0,0,1],
+    '4': [0,1,1,0,0,1,1],
+    '5': [1,0,1,1,0,1,1],
+    '6': [1,0,1,1,1,1,1],
+    '7': [1,1,1,0,0,0,0],
+    '8': [1,1,1,1,1,1,1],
+    '9': [1,1,1,1,0,1,1],
+    ' ': [0,0,0,0,0,0,0]
+  };
+
+  function drawSevenSegmentDisplay(cfg) {
+    const svg = document.getElementById('lcdSvg');
+    const glass = document.getElementById('lcdGlass');
+    glass.classList.toggle('off', !cfg.powered);
+
+    const ON = '#111810';
+    const OFF = 'rgba(17, 24, 16, 0.07)';
+
+    let out = '';
+
+    // Служебные индикаторы ЖК слева
+    out += `<text x="6" y="16" font-family="monospace" font-weight="900" font-size="11" fill="${(cfg.powered && cfg.ac) ? ON : OFF}">AC</text>`;
+    out += `<text x="6" y="31" font-family="monospace" font-weight="900" font-size="10" fill="${(cfg.powered && cfg.bat) ? ON : OFF}">BAT</text>`;
+    out += `<text x="6" y="46" font-family="monospace" font-weight="900" font-size="10" fill="${(cfg.powered && cfg.cont) ? ON : OFF}">➔|-</text>`;
+
+    // Сегмент знака МИНУС («-»)
+    const minusColor = (cfg.powered && cfg.minus) ? ON : OFF;
+    out += `<polygon points="40,33 58,33 60,36.5 58,40 40,40 38,36.5" fill="${minusColor}" />`;
+
+    // 4 семисегментных знакоместа (3.5 разряда: максимум 1999)
+    const xPositions = [68, 118, 170, 222];
+    for (let i = 0; i < 4; i++) {
+      const x = xPositions[i];
+      const ch = cfg.powered ? (cfg.digits[i] || ' ') : ' ';
+      const segs = DIGIT_SEGMENTS[ch] || DIGIT_SEGMENTS[' '];
+
+      const paths = [
+        `M ${x+7},6 L ${x+33},6 L ${x+29},12 L ${x+10},12 Z`,
+        `M ${x+34},7 L ${x+38},11 L ${x+35},33 L ${x+31},30 L ${x+30},13 Z`,
+        `M ${x+30},38 L ${x+34},35 L ${x+32},58 L ${x+27},62 L ${x+27},40 Z`,
+        `M ${x+7},57 L ${x+26},57 L ${x+29},63 L ${x+4},63 Z`,
+        `M ${x+3},36 L ${x+8},38 L ${x+7},56 L ${x+2},60 L ${x+2},38 Z`,
+        `M ${x+5},9 L ${x+10},13 L ${x+9},30 L ${x+4},33 L ${x+4},12 Z`,
+        `M ${x+9},31.5 L ${x+29},31.5 L ${x+32},35 L ${x+29},38 L ${x+8},38 L ${x+5},35 Z`
+      ];
+
+      for (let s = 0; s < 7; s++) {
+        if (i === 0 && s !== 1 && s !== 2) continue;
+        out += `<path d="${paths[s]}" fill="${segs[s] ? ON : OFF}" />`;
+      }
+
+      if (i < 3) {
+        const dotOn = cfg.powered && (cfg.dotPos === i + 1);
+        out += `<circle cx="${x + 43}" cy="60" r="3.5" fill="${dotOn ? ON : OFF}" />`;
+      }
+    }
+
+    if (svg.innerHTML !== out) svg.innerHTML = out;
+    svg.setAttribute('aria-label', cfg.powered ? 'Показание: ' + (cfg.text || '') : 'Мультиметр выключен');
+  }
+
+  function numberToLcdFormat(value, maxVal, decimals) {
+    const counts = Math.round((Math.abs(value) + Number.EPSILON) * 10 ** decimals);
+    const overload = !Number.isFinite(value) || counts > 1999 || Math.abs(value) > maxVal;
+    if (overload) return {overload: true, minus: false, digits: ['1',' ',' ',' '], dotPos: 0};
+    const raw = counts.toString().padStart(decimals + 1, '0').padStart(4, ' ');
+    return {overload: false, minus: value < 0 && counts > 0,
+      digits: raw.split(''), dotPos: decimals ? 4 - decimals : 0};
+  }
+
+  /**********************************************************************
+   * 5. ОТРИСОВКА КРУГОВОЙ ШКАЛЫ MY64 С БЕЛЫМИ РАДИАЛЬНЫМИ РАЗДЕЛИТЕЛЯМИ
+   **********************************************************************/
+  function polarToXY(cx, cy, r, clockDeg) {
+    const rad = (clockDeg - 90) * Math.PI / 180;
+    return {
+      x: cx + r * Math.cos(rad),
+      y: cy + r * Math.sin(rad)
+    };
+  }
+
+  function renderDialScale() {
+    const layer = document.getElementById('dialScaleLayer');
+    const cx = 157, cy = 136;
+    const dotR = 78.5;
+    let html = '';
+
+    // 1. Белые радиальные линии границ секторов как на оригинале MY64
+    SECTOR_DIVIDER_ANGLES.forEach(ang => {
+      const p1 = polarToXY(cx, cy, 74.5, ang);
+      const p2 = polarToXY(cx, cy, 98.5, ang);
+      html += `<line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1.35" />`;
+    });
+
+    // 2. Символы секторов (Ω, V⎓, V~, Hz, F, A~, A⎓) рядом со своими пределами
+    SECTOR_HEADERS.forEach(sh => {
+      const p = polarToXY(cx, cy, sh.r, sh.angle);
+      html += `<text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="middle" fill="${sh.color}" font-size="${sh.size}" font-weight="900">${sh.text}</text>`;
+    });
+
+    // 3. Все 32 позиции с белыми точками и выверенными подписями без наездов на линии
+    DIAL_RANGES.forEach((item, idx) => {
+      const dPt = polarToXY(cx, cy, dotR, item.angle);
+      const tPt = polarToXY(cx, cy, item.r, item.angle);
+      const tx = tPt.x + (item.dx || 0);
+      const ty = tPt.y + 3 + (item.dy || 0);
+      const hitPt = polarToXY(cx, cy, 86, item.angle);
+
+      const isCurrent = (idx === state.dialIdx);
+
+      if (item.isContIcon) {
+        // Заводская шелкография значка прозвонки и диода (нота + диод)
+        const ix = tx - 22;
+        const iy = ty - 7;
+        html += `
+          <g class="dial-pos-hit" role="button" tabindex="0" aria-label="${rangeTitle(item)}" onkeydown="dialKey(event,${idx})" onclick="selectDialRange(${idx})">
+            <circle cx="${hitPt.x.toFixed(1)}" cy="${hitPt.y.toFixed(1)}" r="11" fill="transparent" />
+            <circle class="dial-pos-dot ${isCurrent ? 'active' : ''}" cx="${dPt.x.toFixed(1)}" cy="${dPt.y.toFixed(1)}" r="2.2" />
+            <g class="cont-icon-group ${isCurrent ? 'active' : ''}" transform="translate(${ix.toFixed(1)}, ${iy.toFixed(1)})">
+              <!-- Двойная восьмая нота (пищалка) -->
+              <ellipse cx="2.2" cy="7.5" rx="1.6" ry="1.2" />
+              <ellipse cx="6.8" cy="6.8" rx="1.6" ry="1.2" />
+              <path d="M 3.4,7.2 L 3.4,1.5 L 8.0,0.8 L 8.0,6.5" fill="none" stroke-width="1.1" />
+              <!-- Значок диода ➔|- -->
+              <line x1="10.5" y1="4.5" x2="19.5" y2="4.5" stroke-width="1.2" />
+              <polygon points="13.2,2.2 13.2,6.8 16.8,4.5" />
+              <line x1="17.2" y1="2.0" x2="17.2" y2="7.0" stroke-width="1.3" />
+            </g>
+          </g>
+        `;
+      } else {
+        html += `
+          <g class="dial-pos-hit" role="button" tabindex="0" aria-label="${rangeTitle(item)}" onkeydown="dialKey(event,${idx})" onclick="selectDialRange(${idx})">
+            <circle cx="${hitPt.x.toFixed(1)}" cy="${hitPt.y.toFixed(1)}" r="11" fill="transparent" />
+            <circle class="dial-pos-dot ${isCurrent ? 'active' : ''}" cx="${dPt.x.toFixed(1)}" cy="${dPt.y.toFixed(1)}" r="2.2" />
+            <text class="dial-pos-text ${isCurrent ? 'active' : ''}"
+                  x="${tx.toFixed(1)}" y="${ty.toFixed(1)}"
+                  text-anchor="${item.anchor}">${item.label}</text>
+          </g>
+        `;
+      }
+    });
+
+    const focused = document.activeElement?.getAttribute('aria-label');
+    layer.innerHTML = html;
+    if (focused) [...layer.querySelectorAll('[aria-label]')].find(el => el.getAttribute('aria-label') === focused)?.focus({preventScroll:true});
+    document.getElementById('rangeSelect').value = state.dialIdx;
+    const activeRange = DIAL_RANGES[state.dialIdx];
+    document.getElementById('rotaryTurntable').setAttribute('transform', `rotate(${activeRange.angle}, 157, 136)`);
+  }
+
+  function selectDialRange(idx) {
+    if (!Number.isInteger(idx) || !DIAL_RANGES[idx]) return;
+    lastActivity = performance.now();
+    if (state.dialIdx !== idx) {
+      state.dialIdx = idx;
+      playMechanicalClick();
+      renderDialScale();
+      runSimulation();
+    }
+  }
+
+  // Плавное вращение ручки пальцем или мышью (0° = строго 12:00)
+  (function setupTurntableDrag() {
+    const turntable = document.getElementById('rotaryTurntable');
+    const svg = document.getElementById('dialSvg');
+    let dialPointerId = null;
+
+    turntable.addEventListener('pointerdown', (e) => {
+      if (dialPointerId !== null || activeDragKind !== null || e.button > 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      initAudio();
+      dialPointerId = e.pointerId;
+      turntable.setPointerCapture(e.pointerId);
+    }, {passive: false});
+
+    turntable.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== dialPointerId) return;
+      e.preventDefault();
+      const rect = svg.getBoundingClientRect();
+      const cx = rect.left + rect.width * (157 / 314);
+      const cy = rect.top + rect.height * (136 / 294);
+      let clockDeg = Math.atan2(e.clientY - cy, e.clientX - cx) * 180 / Math.PI + 90;
+
+      let closestIdx = state.dialIdx;
+      let minDelta = 999;
+      DIAL_RANGES.forEach((r, i) => {
+        let diff = ((r.angle - clockDeg) % 360 + 540) % 360 - 180;
+        if (Math.abs(diff) < minDelta) {
+          minDelta = Math.abs(diff);
+          closestIdx = i;
+        }
+      });
+      selectDialRange(closestIdx);
+    }, {passive: false});
+
+    const releaseDial = e => {
+      if (e.pointerId !== dialPointerId) return;
+      if (e.cancelable) e.preventDefault();
+      dialPointerId = null;
+      if (turntable.hasPointerCapture(e.pointerId)) turntable.releasePointerCapture(e.pointerId);
+    };
+    turntable.addEventListener('pointerup', releaseDial);
+    turntable.addEventListener('pointercancel', releaseDial);
+    turntable.addEventListener('lostpointercapture', releaseDial);
+  })();
+
+  function togglePower() {
+    state.powerOn = !state.powerOn;
+    lastActivity = performance.now();
+    document.getElementById('powerBtn').setAttribute('aria-pressed', state.powerOn);
+    playMechanicalClick();
+    document.getElementById('powerBtn').classList.toggle('pressed', state.powerOn);
+    runSimulation();
+  }
+
+  /**********************************************************************
+   * 6. НИЖНИЙ РАБОЧИЙ СТОЛ (5 ОБЪЕКТОВ С ЛАТУННЫМИ КЛЕММАМИ)
+   **********************************************************************/
+  function selectBenchObject(objKey, tabBtn) {
+    looseProbes.clear();
+    state.blackTerm = null;
+    state.redTerm = null;
+    state.benchObject = objKey;
+    document.querySelectorAll('.bench-tab').forEach(b => b.classList.remove('active'));
+    if (tabBtn) tabBtn.classList.add('active');
+
+    if (objKey !== 'current_loop' && (state.blackTerm === 'M' || state.redTerm === 'M')) {
+      state.blackTerm = 'L';
+      state.redTerm = 'R';
+    }
+
+    renderBenchBoard();
+    requestAnimationFrame(() => {
+      updateAllWirePositions();
+      runSimulation();
+    });
+  }
+
+  function cycleDcSourceVoltage() {
+    if (state.dcVoltageVal === 12.62) state.dcVoltageVal = 9.15;
+    else if (state.dcVoltageVal === 9.15) state.dcVoltageVal = 48.5;
+    else state.dcVoltageVal = 12.62;
+    playMechanicalClick();
+    renderBenchBoard();
+    updateAllWirePositions();
+    runSimulation();
+  }
+
+  function cycleResistorValue() {
+    if (state.resistorOhms === 4700) state.resistorOhms = 150;
+    else if (state.resistorOhms === 150) state.resistorOhms = 150000;
+    else state.resistorOhms = 4700;
+    playMechanicalClick();
+    renderBenchBoard();
+    updateAllWirePositions();
+    runSimulation();
+  }
+
+  function toggleResistorLivePower() {
+    state.resistorLivePower = !state.resistorLivePower;
+    playMechanicalClick();
+    renderBenchBoard();
+    updateAllWirePositions();
+    runSimulation();
+  }
+
+  function toggleCurrentLoadVal() {
+    state.currentLoadAmps = (state.currentLoadAmps === 0.140) ? 4.85 : 0.140;
+    playMechanicalClick();
+    renderBenchBoard();
+    updateAllWirePositions();
+    runSimulation();
+  }
+
+  function toggleDiodeOrWire() {
+    state.diodeOrWire = (state.diodeOrWire === 'diode') ? 'wire' : 'diode';
+    playMechanicalClick();
+    renderBenchBoard();
+    updateAllWirePositions();
+    runSimulation();
+  }
+
+  function renderBenchBoard() {
+    const board = document.getElementById('benchBoard');
+    const key = state.benchObject;
+
+    if (key === 'dc_batt') {
+      board.innerHTML = `
+        <div class="board-header">
+          <span>🔋 Источник постоянного напряжения: <b>${state.dcVoltageVal} В (DC)</b></span>
+          <button class="sub-toggle-btn" onclick="cycleDcSourceVoltage()">Сменить: 9В / 12В / 48В</button>
+        </div>
+        <div class="terminals-row">
+          <div class="contact-post" id="term_L" data-term="L">
+            <div class="brass-nut"></div>
+            <div class="post-label" style="color:#74c0fc;">− МИНУС<br>(0 В)</div>
+          </div>
+          <div class="part-visual">
+            <svg width="126" height="54" viewBox="0 0 126 54">
+              <rect x="14" y="10" width="98" height="40" rx="7" fill="#1e293b" stroke="#475569" stroke-width="2"/>
+              <rect x="26" y="4" width="14" height="6" rx="2" fill="#60a5fa"/>
+              <rect x="86" y="4" width="14" height="6" rx="2" fill="#f87171"/>
+              <text x="63" y="35" text-anchor="middle" fill="#ffffff" font-size="13.5" font-weight="900">= ${state.dcVoltageVal} В</text>
+            </svg>
+          </div>
+          <div class="contact-post" id="term_R" data-term="R">
+            <div class="brass-nut"></div>
+            <div class="post-label" style="color:#ff8787;">+ ПЛЮС<br>+${String(state.dcVoltageVal).replace('.',',')}В</div>
+          </div>
+        </div>
+      `;
+    } else if (key === 'ac_mains') {
+      board.innerHTML = `
+        <div class="board-header">
+          <span>🔌 Переменное напряжение сети: <b>~223 В, 50 Гц (AC)</b></span>
+          <span style="font-size:14px;color:#ffd43b;">Предел: 700 V~</span>
+        </div>
+        <div class="terminals-row">
+          <div class="contact-post" id="term_L" data-term="L">
+            <div class="brass-nut"></div>
+            <div class="post-label">N (Ноль)</div>
+          </div>
+          <div class="part-visual">
+            <svg width="106" height="54" viewBox="0 0 106 54">
+              <rect x="23" y="3" width="60" height="48" rx="10" fill="#e9ecef" stroke="#868e96" stroke-width="2"/>
+              <circle cx="53" cy="27" r="19" fill="#dee2e6" stroke="#adb5bd" stroke-width="1.5"/>
+              <circle cx="44" cy="27" r="4" fill="#212529"/>
+              <circle cx="62" cy="27" r="4" fill="#212529"/>
+              <text x="53" y="43" text-anchor="middle" fill="#212529" font-size="8" font-weight="900">~220V 50Hz</text>
+            </svg>
+          </div>
+          <div class="contact-post" id="term_R" data-term="R">
+            <div class="brass-nut"></div>
+            <div class="post-label" style="color:#ffa94d;">L (Фаза ~)</div>
+          </div>
+        </div>
+      `;
+    } else if (key === 'resistor') {
+      const bands = state.resistorOhms === 150 ? ['#795548','#28a745','#795548'] : state.resistorOhms === 4700 ? ['#f5c542','#8f5bd7','#e03131'] : ['#795548','#28a745','#f59f00'];
+      const rText = state.resistorOhms >= 1000 ? (state.resistorOhms / 1000) + ' кОм' : state.resistorOhms + ' Ом';
+      board.innerHTML = `
+        <div class="board-header">
+          <button class="sub-toggle-btn" onclick="cycleResistorValue()">Номинал: ${rText}</button>
+          <button class="sub-toggle-btn ${state.resistorLivePower ? 'danger' : ''}" onclick="toggleResistorLivePower()">
+            ${state.resistorLivePower ? '⚡ Схема ПОД НАПРЯЖЕНИЕМ!' : '✅ Схема обесточена'}
+          </button>
+        </div>
+        <div class="terminals-row">
+          <div class="contact-post" id="term_L" data-term="L">
+            <div class="brass-nut"></div>
+            <div class="post-label">1</div>
+          </div>
+          <div class="part-visual">
+            <svg width="124" height="46" viewBox="0 0 124 46">
+              <line x1="5" y1="23" x2="119" y2="23" stroke="#adb5bd" stroke-width="4"/>
+              <rect x="26" y="10" width="72" height="26" rx="8" fill="#d9b382" stroke="#8c673a" stroke-width="2"/>
+              <rect x="38" y="10" width="6" height="26" fill="${bands[0]}"/>
+              <rect x="50" y="10" width="6" height="26" fill="${bands[1]}"/>
+              <rect x="62" y="10" width="6" height="26" fill="${bands[2]}"/>
+              <rect x="80" y="10" width="5" height="26" fill="#fab005"/>
+            </svg>
+            <span style="font-size:10px;font-weight:800;color:#e2e8f0;">R = ${rText}</span>
+          </div>
+          <div class="contact-post" id="term_R" data-term="R">
+            <div class="brass-nut"></div>
+            <div class="post-label">2</div>
+          </div>
+        </div>
+      `;
+    } else if (key === 'current_loop') {
+      const isHigh = state.currentLoadAmps > 1;
+      board.innerHTML = `
+        <div class="board-header">
+          <span>💡 Источник 12 В ${state.currentAC ? "~" : "⎓"}. Клеммы <b>1–2</b> — разрыв перед лампой; <b>1–3</b> — источник.</span>
+          <button class="sub-toggle-btn" onclick="toggleCurrentLoadVal()">
+            Лампа: ${isHigh ? 'мощная' : 'малая'}
+          </button>
+        </div>
+        <div class="terminals-row">
+          <div class="contact-post" id="term_L" data-term="L" style="width:76px;">
+            <div class="brass-nut"></div>
+            <div class="post-label" style="color:#51cf66;">1<br>${state.currentAC ? "~12 В" : "+12 В"}</div>
+          </div>
+          <div class="contact-post" id="term_M" data-term="M" style="width:76px;">
+            <div class="brass-nut"></div>
+            <div class="post-label" style="color:#51cf66;">2<br>К лампе</div>
+          </div>
+          <div class="part-visual">
+            <svg width="68" height="50" viewBox="0 0 68 50">
+              <circle data-lamp cx="34" cy="21" r="14" fill="#2b303a" stroke="#ffd43b" stroke-width="2"/>
+              <path d="M 26,25 Q 34,10 42,25" fill="none" stroke="#ffd43b" stroke-width="2"/>
+              <text data-lamp-reading x="34" y="46" text-anchor="middle" fill="#ffd43b" font-size="16" font-weight="900">0 мА</text>
+            </svg>
+          </div>
+          <div class="contact-post" id="term_R" data-term="R" style="width:76px;">
+            <div class="brass-nut"></div>
+            <div class="post-label" style="color:#ff6b6b;">3<br>${state.currentAC ? "Общий" : "Минус"}</div>
+          </div>
+        </div>
+      `;
+      board.querySelector('.board-header').insertAdjacentHTML('beforeend',
+        `<button class="sub-toggle-btn" onclick="toggleCurrentAC()">Источник: ${state.currentAC ? 'переменный' : 'постоянный'}</button>`);
+    } else if (key === 'diode_beep') {
+      const isDiode = state.diodeOrWire === 'diode';
+      board.innerHTML = `
+        <div class="board-header">
+          <span>🔔 ${isDiode ? 'Кремниевый диод 1N4007 (ΔU = 585 мВ)' : 'Медная перемычка (R = 0,3 Ом — прозвонка)'}</span>
+          <button class="sub-toggle-btn" onclick="toggleDiodeOrWire()">
+            Сменить: ${isDiode ? 'Проводник' : 'Диод'}
+          </button>
+        </div>
+        <div class="terminals-row">
+          <div class="contact-post" id="term_L" data-term="L">
+            <div class="brass-nut"></div>
+            <div class="post-label">${isDiode ? 'Катод' : 'А'}</div>
+          </div>
+          <div class="part-visual">
+            ${isDiode ? `
+              <svg width="116" height="46" viewBox="0 0 116 46">
+                <line x1="6" y1="23" x2="110" y2="23" stroke="#adb5bd" stroke-width="4"/>
+                <rect x="30" y="10" width="56" height="26" rx="4" fill="#1a1d21" stroke="#6c757d" stroke-width="2"/>
+                <rect x="36" y="10" width="10" height="26" fill="#dee2e6"/>
+                <polygon points="72,16 72,30 54,23" fill="#dee2e6"/>
+                <line x1="53" y1="16" x2="53" y2="30" stroke="#dee2e6" stroke-width="2.5"/>
+              </svg>
+            ` : `
+              <svg width="116" height="46" viewBox="0 0 116 46">
+                <path d="M 8,24 Q 58,5 108,24" fill="none" stroke="#f59f00" stroke-width="6" stroke-linecap="round"/>
+                <text x="58" y="40" text-anchor="middle" fill="#ffd43b" font-size="9.5" font-weight="800">0.3 Ом (КЗ)</text>
+              </svg>
+            `}
+          </div>
+          <div class="contact-post" id="term_R" data-term="R">
+            <div class="brass-nut"></div>
+            <div class="post-label">${isDiode ? 'Анод' : 'Б'}</div>
+          </div>
+        </div>
+      `;
+    }
+  }
+
+  /**********************************************************************
+   * 7. ПЕРЕТАСКИВАНИЕ ЩУПОВ И ШТЕКЕРОВ ПАЛЬЦЕМ (НЕЗАВИСИМЫЕ 4 УЗЛА)
+   **********************************************************************/
+  let activeDragKind = null;
+  // An unconnected probe stays where it was dropped. Only explicit reset,
+  // object selection and a viewport resize put it back on the resting area.
+  const looseProbes = new Set();
+
+  function getCenterInStage(el) {
+    const stageRect = document.getElementById('trainerStage').getBoundingClientRect();
+    const r = el.getBoundingClientRect();
+    return {
+      x: r.left - stageRect.left + r.width / 2,
+      y: r.top - stageRect.top + r.height / 2
+    };
+  }
+
+  function getNutCenterInStage(postEl) {
+    const nut = postEl.querySelector('.brass-nut') || postEl;
+    return getCenterInStage(nut);
+  }
+
+  function updateAllWirePositions() {
+    // 1. Привязываем чёрный штекер строго к центру гнезда (только если он вставлен и сейчас не перетаскивается)
+    if (activeDragKind !== 'blackPlug' && state.blackJack) {
+      const sockEl = document.getElementById('jack_' + state.blackJack);
+      if (sockEl) coords.blackPlug = getCenterInStage(sockEl);
+    }
+
+    // 2. Привязываем красный штекер строго к центру гнезда (только если он вставлен и сейчас не перетаскивается)
+    if (activeDragKind !== 'redPlug' && state.redJack) {
+      const sockEl = document.getElementById('jack_' + state.redJack);
+      if (sockEl) coords.redPlug = getCenterInStage(sockEl);
+    }
+
+    // 3. Привязываем жало чёрного щупа (0, -25) строго в центр латунной гайки клеммы
+    if (activeDragKind !== 'blackProbe' && state.blackTerm) {
+      const postEl = document.getElementById('term_' + state.blackTerm);
+      if (postEl) {
+        const nutPt = getNutCenterInStage(postEl);
+        const samePost = (state.redTerm === state.blackTerm);
+        coords.blackProbe = { x: nutPt.x + (samePost ? -7 : 0), y: nutPt.y + 25 };
+      }
+    }
+
+    // 4. Привязываем жало красного щупа (0, -25) строго в центр латунной гайки клеммы
+    if (activeDragKind !== 'redProbe' && state.redTerm) {
+      const postEl = document.getElementById('term_' + state.redTerm);
+      if (postEl) {
+        const nutPt = getNutCenterInStage(postEl);
+        const samePost = (state.redTerm === state.blackTerm);
+        coords.redProbe = { x: nutPt.x + (samePost ? 7 : 0), y: nutPt.y + 25 };
+      }
+    }
+
+    for (const color of ['black', 'red']) {
+      const kind = color + 'Probe';
+      if (!state[color + 'Term'] && activeDragKind !== kind && !looseProbes.has(kind)) {
+        const parking = getCenterInStage(document.getElementById('probeParking'));
+        coords[kind] = {x: parking.x + (color === 'black' ? -65 : 65), y: parking.y - 5};
+      }
+    }
+    syncConnectionFields();
+    // Визуальная индикация вставленных штекеров и подключённых клемм
+    document.getElementById('blackPlugPin').style.display = state.blackJack ? 'none' : 'block';
+    document.getElementById('redPlugPin').style.display = state.redJack ? 'none' : 'block';
+
+    document.querySelectorAll('.socket-well').forEach(s => {
+      const jk = s.dataset.jack;
+      s.classList.toggle('plugged', state.blackJack === jk || state.redJack === jk);
+    });
+
+    document.querySelectorAll('.contact-post').forEach(p => {
+      const tk = p.dataset.term;
+      p.classList.toggle('connected', state.blackTerm === tk || state.redTerm === tk);
+    });
+
+    renderCablesAndNodes();
+  }
+
+  function renderCablesAndNodes() {
+    const bp = coords.blackPlug;
+    const rp = coords.redPlug;
+    const bt = coords.blackProbe;
+    const rt = coords.redProbe;
+
+    document.getElementById('blackPlugNode').setAttribute('transform', `translate(${bp.x}, ${bp.y})`);
+    document.getElementById('redPlugNode').setAttribute('transform', `translate(${rp.x}, ${rp.y})`);
+    document.getElementById('blackProbeNode').setAttribute('transform', `translate(${bt.x}, ${bt.y})`);
+    document.getElementById('redProbeNode').setAttribute('transform', `translate(${rt.x}, ${rt.y})`);
+
+    const bStart = { x: bp.x, y: bp.y + 10 };
+    const bEnd   = { x: bt.x, y: bt.y + 40 };
+    const stage = document.getElementById('trainerStage').getBoundingClientRect();
+    const board = document.getElementById('benchBoard').getBoundingClientRect();
+    const meter = document.getElementById('multimeterCase').getBoundingClientRect();
+    const rail = Math.max(board.bottom,meter.bottom) - stage.top + 35;
+    const cablePath = (start,end,isRed) => {
+      if (window.innerWidth > 850) return `M ${start.x},${start.y} C ${start.x},${rail} ${end.x},${rail} ${end.x},${end.y}`;
+      const side = isRed ? stage.width - 6 : 6;
+      const y = rail + (isRed ? 12 : 0);
+      return `M ${start.x},${start.y} C ${start.x},${start.y+38} ${side},${start.y+18} ${side},${start.y+60} L ${side},${y-22} Q ${side},${y} ${side+(isRed?-22:22)},${y} L ${end.x},${y} Q ${end.x},${y} ${end.x},${end.y}`;
+    };
+    const bPath = cablePath(bStart,bEnd,false);
+    document.getElementById('blackCableOuter').setAttribute('d', bPath);
+    document.getElementById('blackCableShine').setAttribute('d', bPath);
+
+    const rStart = { x: rp.x, y: rp.y + 10 };
+    const rEnd   = { x: rt.x, y: rt.y + 40 };
+    const rPath = cablePath(rStart,rEnd,true);
+    document.getElementById('redCableOuter').setAttribute('d', rPath);
+    document.getElementById('redCableShine').setAttribute('d', rPath);
+  }
+
+  function bindDragNode(nodeId, kind) {
+    const node = document.getElementById(nodeId);
+    let draggingPointerId = null;
+    let grabOffset = { dx: 0, dy: 0 };
+    let frame = null;
+    let pendingPoint = null;
+    const wires = document.getElementById('wiresSvg');
+
+    const moveTo = point => {
+      const stageRect = document.getElementById('trainerStage').getBoundingClientRect();
+      coords[kind] = {x: point.x - stageRect.left + grabOffset.dx,
+        y: point.y - stageRect.top + grabOffset.dy};
+      if (kind.endsWith('Probe')) {
+        highlightClosestPost({x: coords[kind].x, y: coords[kind].y - 25});
+      } else {
+        highlightClosestSocket(coords[kind], kind === 'blackPlug' ? state.redJack : state.blackJack);
+      }
+      renderCablesAndNodes();
+    };
+
+    node.addEventListener('pointerdown', (e) => {
+      if (activeDragKind !== null || e.button > 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      initAudio();
+      lastActivity = performance.now();
+      draggingPointerId = e.pointerId;
+      activeDragKind = kind;
+      if (kind.endsWith('Probe')) looseProbes.add(kind);
+      wires.classList.add('is-manipulating');
+      node.setPointerCapture(e.pointerId);
+
+      const stageRect = document.getElementById('trainerStage').getBoundingClientRect();
+      const px = e.clientX - stageRect.left;
+      const py = e.clientY - stageRect.top;
+      grabOffset.dx = coords[kind].x - px;
+      grabOffset.dy = coords[kind].y - py;
+
+      // Как только пользователь выдернул штекер или щуп — цепь сразу размыкается
+      if (kind === 'blackPlug') state.blackJack = null;
+      if (kind === 'redPlug')   state.redJack = null;
+      if (kind === 'blackProbe') state.blackTerm = null;
+      if (kind === 'redProbe')   state.redTerm = null;
+
+      updateAllWirePositions();
+      runSimulation();
+    }, {passive: false});
+
+    node.addEventListener('pointermove', (e) => {
+      if (e.pointerId !== draggingPointerId) return;
+      e.preventDefault();
+      pendingPoint = {x: e.clientX, y: e.clientY};
+      if (frame === null) frame = requestAnimationFrame(() => {
+        frame = null;
+        if (draggingPointerId !== null && pendingPoint) moveTo(pendingPoint);
+        pendingPoint = null;
+      });
+    }, {passive: false});
+
+    const finishDrag = (e) => {
+      if (e.pointerId !== draggingPointerId) return;
+      if (e.cancelable) e.preventDefault();
+      if (frame !== null) cancelAnimationFrame(frame);
+      frame = null;
+      pendingPoint = null;
+      // pointerup can arrive before the scheduled paint of the last move.
+      // Cancel/lost capture must never connect a probe to a nearby terminal.
+      const dropped = e.type === 'pointerup';
+      if (dropped) moveTo({x:e.clientX, y:e.clientY});
+      draggingPointerId = null;
+      activeDragKind = null;
+      wires.classList.remove('is-manipulating');
+      clearDropHighlights();
+
+      if (kind === 'blackProbe' || kind === 'redProbe') {
+        const tipPt = { x: coords[kind].x, y: coords[kind].y - 25 };
+        const postKey = dropped ? findClosestPost(tipPt) : null;
+        if (kind === 'blackProbe') state.blackTerm = postKey;
+        else state.redTerm = postKey;
+        if (postKey) { looseProbes.delete(kind); playMechanicalClick(); }
+      } else {
+        const otherJack = (kind === 'blackPlug') ? state.redJack : state.blackJack;
+        const sockKey = dropped ? findClosestSocket(coords[kind], otherJack) : null;
+        if (sockKey) {
+          if (kind === 'blackPlug') state.blackJack = sockKey;
+          else state.redJack = sockKey;
+          playMechanicalClick();
+        } else {
+          // Штекер оставлен вне гнезда — прибор отключён от этого провода
+          if (kind === 'blackPlug') state.blackJack = null;
+          else state.redJack = null;
+        }
+      }
+
+      if (node.hasPointerCapture(e.pointerId)) node.releasePointerCapture(e.pointerId);
+      updateAllWirePositions();
+      runSimulation();
+    };
+
+    node.addEventListener('pointerup', finishDrag);
+    node.addEventListener('pointercancel', finishDrag);
+    node.addEventListener('lostpointercapture', finishDrag);
+  }
+
+  // Поиск ближайшей латунной клеммы к кончику жала щупа (строгий радиус 34px)
+  function findClosestPost(tipPt) {
+    const posts = document.querySelectorAll('.contact-post');
+    let best = null, minD = 34;
+    posts.forEach(p => {
+      const c = getNutCenterInStage(p);
+      const d = Math.hypot(c.x - tipPt.x, c.y - tipPt.y);
+      if (d < minD) {
+        minD = d;
+        best = p.dataset.term;
+      }
+    });
+    return best;
+  }
+
+  function highlightClosestPost(tipPt) {
+    const near = findClosestPost(tipPt);
+    document.querySelectorAll('.contact-post').forEach(p => {
+      p.classList.toggle('drop-target', p.dataset.term === near);
+    });
+  }
+
+  // Поиск ближайшего СВОБОДНОГО гнезда мультиметра (строгий радиус 26px — только само гнездо!)
+  function findClosestSocket(pt, occupiedJack) {
+    const socks = document.querySelectorAll('.socket-well');
+    let best = null, minD = 26;
+    socks.forEach(s => {
+      const jk = s.dataset.jack;
+      if (jk === occupiedJack) return; // Нельзя вставить два штекера в одно гнездо
+      const c = getCenterInStage(s);
+      const d = Math.hypot(c.x - pt.x, c.y - pt.y);
+      if (d < minD) {
+        minD = d;
+        best = jk;
+      }
+    });
+    return best;
+  }
+
+  function highlightClosestSocket(pt, occupiedJack) {
+    const near = findClosestSocket(pt, occupiedJack);
+    document.querySelectorAll('.socket-well').forEach(s => {
+      s.classList.toggle('drop-target', s.dataset.jack === near);
+    });
+  }
+
+  function clearDropHighlights() {
+    document.querySelectorAll('.contact-post, .socket-well').forEach(el => el.classList.remove('drop-target'));
+  }
+
+  /**********************************************************************
+   * 8. АНИМАЦИЯ ИСКР И ДЫМА ПРИ СГОРАНИИ ПРЕДОХРАНИТЕЛЯ
+   **********************************************************************/
+  function triggerFuseBlowVisual(jackKey) {
+    playShortCircuitBang();
+    const caseEl = document.getElementById('multimeterCase');
+    caseEl.classList.remove('shake');
+    void caseEl.offsetWidth;
+    caseEl.classList.add('shake');
+
+    const sockEl = document.getElementById('jack_' + jackKey) || document.getElementById('jack_mA');
+    const c = getCenterInStage(sockEl);
+    const layer = document.getElementById('sparksLayer');
+
+    let svgFx = `
+      <circle cx="${c.x}" cy="${c.y}" r="36" fill="rgba(255, 224, 102, 0.9)">
+        <animate attributeName="r" from="8" to="58" dur="0.36s" fill="freeze" />
+        <animate attributeName="opacity" from="1" to="0" dur="0.36s" fill="freeze" />
+      </circle>
+    `;
+    for (let i = 0; i < 12; i++) {
+      const a = (i / 12) * Math.PI * 2;
+      const tx = c.x + Math.cos(a) * 52;
+      const ty = c.y + Math.sin(a) * 52;
+      svgFx += `
+        <line x1="${c.x}" y1="${c.y}" x2="${tx}" y2="${ty}" stroke="#ffe066" stroke-width="3" stroke-linecap="round">
+          <animate attributeName="opacity" from="1" to="0" dur="0.38s" fill="freeze" />
+        </line>
+      `;
+    }
+    for (let k = 0; k < 4; k++) {
+      const sx = c.x + (k - 1.5) * 14;
+      svgFx += `
+        <circle cx="${sx}" cy="${c.y}" r="10" fill="rgba(173, 181, 189, 0.72)">
+          <animate attributeName="cy" from="${c.y}" to="${c.y - 95 - k * 16}" dur="1.25s" fill="freeze" />
+          <animate attributeName="r" from="9" to="30" dur="1.25s" fill="freeze" />
+          <animate attributeName="opacity" from="0.8" to="0" dur="1.25s" fill="freeze" />
+        </circle>
+      `;
+    }
+    layer.innerHTML = svgFx;
+    setTimeout(() => { layer.innerHTML = ''; }, 1350);
+  }
+
+  // Equivalent circuits are educational black-box models, not a reconstruction
+  // of an unknown PCB revision. Sources have finite internal resistance.
+  const METER = Object.freeze({voltmeter: 10e6, leads: 0.04, highShunt: 0.03,
+    sourceR: 0.1, diodeCurrent: 0.001, diodeCompliance: 3,
+    fuseLimit: 0.2, fuseI2t: 0.02, shuntI2t: 4500});
+  let lastActivity = performance.now();
+  let lastResult = null;
+
+  function rangeTitle(r) {
+    const names = {DCV:'Постоянное напряжение', ACV:'Переменное напряжение',
+      DCA:'Постоянный ток', ACA:'Переменный ток', OHM:'Сопротивление',
+      CONT:'Диод и прозвонка', CAP:'Ёмкость', TEMP:'Температура', HFE:'Транзистор hFE', HZ:'Частота'};
+    const units = {DCV:'В', ACV:'В', DCA:'А', ACA:'А', OHM:'Ом', CAP:'Ф', HZ:'Гц'};
+    const prefix = {m:'м', k:'к', M:'М', n:'н', 'μ':'мк'};
+    const label = r.label.replace(/([mkMnμ])$/, (_,p) => ' ' + prefix[p]);
+    return names[r.mode] + (units[r.mode] ? ' · ' + label + (/[mkMnμ]$/.test(r.label) ? '' : ' ') + units[r.mode] : '');
+  }
+  function dialKey(e, idx) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectDialRange(idx); }
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      e.preventDefault(); selectDialRange((idx + (e.key === 'ArrowRight' ? 1 : 31)) % 32);
+    }
+  }
+  function toggleSound() {
+    state.soundEnabled = !state.soundEnabled;
+    document.getElementById('soundBtn').textContent = state.soundEnabled ? 'Звук включён' : 'Звук выключен';
+    document.getElementById('soundBtn').setAttribute('aria-pressed', state.soundEnabled);
+    if (state.soundEnabled) initAudio();
+    runSimulation();
+  }
+  function toggleCurrentAC() {
+    state.currentAC = !state.currentAC;
+    renderBenchBoard(); updateAllWirePositions(); runSimulation();
+  }
+  function disconnectProbes() {
+    looseProbes.clear();
+    state.blackTerm = state.redTerm = null;
+    updateAllWirePositions(); runSimulation();
+  }
+  function buildConnectionFields() {
+    const labels = {blackJack:'Чёрный штекер', redJack:'Красный штекер', blackTerm:'Чёрный щуп', redTerm:'Красный щуп'};
+    document.getElementById('connectionFields').innerHTML = Object.entries(labels).map(([key,label]) =>
+      `<label>${label}<select id="control_${key}" aria-label="${label}" onchange="changeConnection('${key}', this.value)"></select></label>`).join('');
+    syncConnectionFields();
+    document.getElementById('connectionControls').addEventListener('toggle', () => updateAllWirePositions());
+  }
+  function syncConnectionFields() {
+    for (const key of ['blackJack','redJack','blackTerm','redTerm']) {
+      const el = document.getElementById('control_' + key);
+      if (!el) continue;
+      const options = key.endsWith('Jack') ? [['','Вынут'],['COM','COM'],['VO','VΩHz'],['mA','mA'],['10A','10A']]
+        : [['','Не касается'], ...[...document.querySelectorAll('.contact-post')].map(p => [p.dataset.term, p.querySelector('.post-label').innerText.replace(/\n/g,' ')])];
+      const html = options.map(([value,label])=>`<option value="${value}">${label}</option>`).join('');
+      if (el.innerHTML !== html) el.innerHTML = html;
+      el.value = state[key] || '';
+    }
+  }
+  function changeConnection(key, value) {
+    lastActivity = performance.now(); initAudio();
+    if (key.endsWith('Jack') && value) {
+      const other = key === 'redJack' ? 'blackJack' : 'redJack';
+      if (state[other] === value) state[other] = null;
+    }
+    state[key] = value || null;
+    if (key.endsWith('Term')) looseProbes.delete(key.replace('Term','Probe'));
+    updateAllWirePositions(); runSimulation();
+  }
+  function replaceBlownFuses() {
+    looseProbes.clear();
+    // The action represents service after disconnecting the instrument, not
+    // replacing a nonexistent fuse in the unfused 10A input.
+    state.powerOn = false;
+    state.blackTerm = state.redTerm = null;
+    state.fuse200mABlown = state.shunt10ABlown = false;
+    state.fuseHeat = state.shuntHeat = 0;
+    document.getElementById('powerBtn').classList.remove('pressed');
+    document.getElementById('powerBtn').setAttribute('aria-pressed', 'false');
+    playMechanicalClick(); updateAllWirePositions(); runSimulation();
+  }
+  function updateDiagBanner(level, htmlText, showRepair = false) {
+    // Disconnecting on pointerdown changes the message. Keep the bench in place
+    // until release, otherwise mobile scroll anchoring moves it under the finger.
+    if (activeDragKind !== null) return;
+    const bar = document.getElementById('diagBar');
+    const label = document.getElementById('diagText');
+    const repair = document.getElementById('fuseReplaceBtn');
+    const display = showRepair ? 'inline-block' : 'none';
+    const changed = label.innerHTML !== htmlText || repair.style.display !== display;
+    bar.className = 'diag-bar ' + (level || '');
+    if (label.innerHTML !== htmlText) label.innerHTML = htmlText;
+    repair.style.display = display;
+    if (changed) requestAnimationFrame(updateAllWirePositions);
+  }
+
+  function currentResistance(range) {
+    if (range.mode !== 'DCA' && range.mode !== 'ACA') return 5;
+    return range.id.endsWith('_2M') ? 110 : range.id.endsWith('_20M') ? 15 : 5;
+  }
+  function inputPath(s, range) {
+    const leg = jack => {
+      if (jack === 'COM') return 0;
+      if (jack === '10A') return s.shunt10ABlown ? Infinity : METER.highShunt;
+      if (jack === 'mA') return s.fuse200mABlown ? Infinity : currentResistance(range);
+      if (jack === 'VO') return METER.voltmeter;
+      return Infinity;
+    };
+    const connected = !!s.blackJack && !!s.redJack && s.blackJack !== s.redJack && !!s.blackTerm && !!s.redTerm;
+    const resistance = leg(s.blackJack) + leg(s.redJack);
+    const uses = jack => connected && (s.blackJack === jack || s.redJack === jack);
+    // Sense voltage is referred to COM; cable colours do not determine polarity.
+    const activeIsRed = s.blackJack === 'COM';
+    return {connected, resistance, uses,
+      hasCOM: s.blackJack === 'COM' || s.redJack === 'COM',
+      activeJack: activeIsRed ? s.redJack : s.blackJack,
+      positiveTerm: activeIsRed ? s.redTerm : s.blackTerm,
+      negativeTerm: activeIsRed ? s.blackTerm : s.redTerm};
+  }
+  function externalPort(s, positive, negative) {
+    const base = {voltage:0, resistance:Infinity, ac:false, frequency:0, diode:false};
+    if (!positive || !negative) return base;
+    const available = s.benchObject === 'current_loop' ? ['L','M','R'] : ['L','R'];
+    if (!available.includes(positive) || !available.includes(negative)) return base;
+    if (positive === negative) return {...base, resistance:0};
+    const sign = positive === 'R' && negative === 'L' ? 1 : -1;
+    if (s.benchObject === 'dc_batt') return {...base, voltage:s.dcVoltageVal * sign, resistance:METER.sourceR};
+    if (s.benchObject === 'ac_mains') return {...base, voltage:223 * sign, resistance:0.5, ac:true, frequency:50};
+    if (s.benchObject === 'resistor') {
+      if (!s.resistorLivePower) return {...base, resistance:s.resistorOhms};
+      return {...base, voltage:12 * s.resistorOhms / (s.resistorOhms + METER.sourceR) * sign,
+        resistance:s.resistorOhms * METER.sourceR / (s.resistorOhms + METER.sourceR)};
+    }
+    if (s.benchObject === 'diode_beep') return {...base,
+      resistance:s.diodeOrWire === 'wire' ? 0.3 : Infinity,
+      diode:s.diodeOrWire === 'diode', forward:positive === 'R'};
+    if (s.benchObject === 'current_loop') {
+      const load = 12 / s.currentLoadAmps - METER.sourceR;
+      const pair = [positive,negative].sort().join('');
+      const voltage = (positive === 'L' ? 12 : 0) - (negative === 'L' ? 12 : 0);
+      return {...base, voltage, resistance:pair === 'LM' ? load + METER.sourceR : pair === 'LR' ? METER.sourceR : load,
+        ac:s.currentAC, frequency:s.currentAC ? 50 : 0};
+    }
+    return base;
+  }
+  function updateProtection(s, path, port, dt) {
+    const current = path.connected ? Math.abs(port.voltage) / (port.resistance + path.resistance + METER.leads) : 0;
+    const safeCurrent = Number.isFinite(current) ? current : 0;
+    const events = [];
+    for (const [jack,heatKey,brokenKey,limit,budget] of [
+      ['mA','fuseHeat','fuse200mABlown',METER.fuseLimit,METER.fuseI2t],
+      ['10A','shuntHeat','shunt10ABlown',10,METER.shuntI2t]]) {
+      const i = path.uses(jack) ? safeCurrent : 0;
+      s[heatKey] = Math.max(0, s[heatKey] + (i > limit ? i*i-limit*limit : -budget/10) * dt);
+      if (!s[brokenKey] && s[heatKey] >= budget) { s[brokenKey] = true; events.push(jack); }
+    }
+    return {current:safeCurrent, events};
+  }
+  function diodeVoltage(current) {
+    // Shockley law at 24 C, calibrated to 0.585V at 1mA for this example diode.
+    const nVt = 1.8 * 8.617333262e-5 * 297.15;
+    const saturation = METER.diodeCurrent / Math.expm1(0.585/nVt);
+    return nVt * Math.log1p(current / saturation);
+  }
+  function resistanceMeasurement(port, range) {
+    const limit = range.max / range.scale;
+    const testCurrent = range.mode === 'CONT' ? METER.diodeCurrent : Math.min(0.001, 0.2 / limit);
+    if (port.diode) {
+      if (!port.forward) return {value:Infinity, buzz:false};
+      const volts = diodeVoltage(testCurrent) + testCurrent * METER.leads;
+      return {value:range.mode === 'CONT' ? volts*1000 : volts/testCurrent*range.scale, buzz:false};
+    }
+    const ohms = port.resistance + METER.leads;
+    const volts = testCurrent * ohms;
+    const value = range.mode === 'CONT' ? (volts > METER.diodeCompliance ? Infinity : volts*1000)
+      : (ohms + (range.id === 'OHM_200M' ? 1e6 : 0)) * range.scale;
+    return {value, buzz:range.mode === 'CONT' && ohms < 50};
+  }
+  function numericText(value, decimals, unit) {
+    return value.toFixed(decimals).replace('.', ',') + (unit ? ' ' + unit : '');
+  }
+  function rangeUnit(range) {
+    if (range.mode === 'OHM') return range.scale === 1 ? 'Ом' : range.scale === 0.001 ? 'кОм' : 'МОм';
+    if (range.mode === 'DCV' || range.mode === 'ACV') return range.scale === 1000 ? 'мВ' : 'В';
+    if (range.mode === 'DCA' || range.mode === 'ACA') return range.scale === 1000 ? 'мА' : 'А';
+    return {CONT:'мВ', HZ:'кГц', TEMP:'°C', HFE:'', CAP:range.label.endsWith('n') ? 'нФ' : 'мкФ'}[range.mode];
+  }
+
+  function calculateReading(s, range) {
+    const path = inputPath(s,range);
+    const port = externalPort(s,path.positiveTerm,path.negativeTerm);
+    const result = {value:0, unit:rangeUnit(range), level:'', message:'', buzz:false, lamp:0};
+    const out = (value,level,message,extra={}) => Object.assign(result,{value,level,message},extra);
+    const damaged = s.fuse200mABlown || s.shunt10ABlown;
+    const unavailable = (path.uses('mA') && s.fuse200mABlown) || (path.uses('10A') && s.shunt10ABlown);
+    if (unavailable) return out(0,'error',
+      path.uses('mA') && s.fuse200mABlown ? 'Предохранитель mA перегорел: токовая цепь разомкнута. Для ремонта нажмите «Восстановить прибор».'
+      : 'Вход 10A повреждён: шунт разомкнут. Здесь нет предохранителя; требуется ремонт. Нажмите «Восстановить прибор».', {repair:true});
+    if (!s.powerOn) return out(0,'warn','Прибор выключен. Нажмите ON/OFF. Токовые входы остаются электрически соединёнными с цепью.',{off:true,repair:damaged});
+    if (range.mode === 'HFE') return out(182,'','Демонстрация hFE: образец транзистора в колодке PNP/NPN, коэффициент усиления 182. Основные упражнения выполняются щупами.');
+    if (range.mode === 'TEMP') return out(24,'','Демонстрация TEMP: термопара в отдельном разъёме, температура образца 24 °C.');
+    if (range.mode === 'CAP') {
+      const cap = 10.4e-9; // Same capacitor on every range, stored in farads.
+      return out(cap / (range.label.endsWith('n') ? 1e-9 : 1e-6),'','Демонстрация Cx: разряженный конденсатор 10,4 нФ в отдельном разъёме. Выберите подходящий предел.');
+    }
+    if (!path.connected) return out(['OHM','CONT'].includes(range.mode) ? Infinity : 0,'',
+      'Вставьте оба штекера и подключите кончики обоих щупов. Можно перетаскивать их или раскрыть «Подключение без перетаскивания».');
+    if (!path.hasCOM) return out(0,'error','Для показаний один провод должен быть подключён к COM. Обычно это чёрный провод.');
+    const hasVoltage = Math.abs(port.voltage) > 0.01;
+    if (['OHM','CONT'].includes(range.mode)) {
+      if (path.activeJack !== 'VO') return out(Infinity,'warn','Для сопротивления, диода и прозвонки используйте COM и VΩHz.');
+      if (hasVoltage) return out(Infinity,'error','На участке есть напряжение. Отключите источник перед измерением сопротивления, диода или прозвонкой. Для проверки напряжения выберите V.');
+      const measurement = resistanceMeasurement(port,range);
+      let msg = range.mode === 'OHM' ? 'Измерение сопротивления обесточенного участка. Учтено сопротивление проводов.'
+        : measurement.buzz ? 'Цепь замкнута: сопротивление меньше 50 Ом. ' + (s.soundEnabled ? 'Звучит сигнал' : 'Звук выключен кнопкой') + '; дисплей показывает испытательное падение напряжения в мВ.'
+        : port.diode && port.forward ? 'Диод включён прямо: красный провод на аноде при обычном подключении к VΩHz. Показано прямое падение напряжения.'
+        : port.diode ? 'Диод включён обратно: переход не проводит испытательный ток.'
+        : 'Сигнала нет: сопротивление участка не ниже порога прозвонки 50 Ом.';
+      if (range.id === 'OHM_200M' && Number.isFinite(measurement.value)) msg += ' На пределе 200 МОм из показания вычитают 1,0 МОм — особенность этого исполнения.';
+      return out(measurement.value,'ok',msg,{buzz:measurement.buzz});
+    }
+    if (range.mode === 'HZ') {
+      if (path.activeJack !== 'VO') return out(0,'warn','Для частоты используйте COM и VΩHz.');
+      if (!port.ac || !hasVoltage) return out(0,'warn','Периодический сигнал отсутствует: частота не определяется.');
+      return out(port.frequency/1000,'warn','Демонстрация частоты: 50 Гц = 0,05 кГц. Для практического упражнения используйте низковольтный сигнал; подключение частотного входа к сети здесь не отрабатывается.');
+    }
+    if (range.mode === 'DCV' || range.mode === 'ACV') {
+      if (path.activeJack !== 'VO') return out(0,'warn','Для измерения напряжения переставьте активный штекер в VΩHz; общий провод подключите к COM.');
+      const correctKind = (range.mode === 'ACV') === port.ac;
+      const voltage = port.voltage * path.resistance / (path.resistance + port.resistance + METER.leads);
+      const value = correctKind && Number.isFinite(voltage) ? (port.ac ? Math.abs(voltage) : voltage)*range.scale : 0;
+      let msg = correctKind ? 'Напряжение измеряется между выбранными точками. ' + (port.ac ? 'Показано действующее значение синусоидального напряжения.' : 'Знак показывает потенциал входа VΩHz относительно COM.')
+        : port.ac ? 'Источник переменный, а выбран V⎓. Нулевое среднее значение не означает отсутствия напряжения. Выберите V~.'
+        : 'Выбран V~, а источник постоянный. Выберите V⎓ для измерения его напряжения.';
+      return out(value,correctKind ? 'ok' : 'warn',msg);
+    }
+    if (range.mode === 'DCA' || range.mode === 'ACA') {
+      if (path.activeJack === 'VO') return out(0,'warn','Для измерения тока включите прибор в разрыв цепи и используйте mA или 10A вместе с COM. Через VΩHz измеряется напряжение.');
+      const correctRange = path.activeJack === '10A' ? range.id.endsWith('_10') : !range.id.endsWith('_10');
+      if (!correctRange) return out(0,'warn','Согласуйте токовое гнездо и предел: вход 10A — предел 10; вход mA — пределы 2m, 20m или 200m.');
+      const amps = port.voltage / (port.resistance + path.resistance + METER.leads);
+      const correctKind = (range.mode === 'ACA') === port.ac;
+      const value = correctKind ? (port.ac ? Math.abs(amps) : amps)*range.scale : 0;
+      const series = s.benchObject === 'current_loop' && [path.positiveTerm,path.negativeTerm].sort().join('') === 'LM';
+      const lamp = series ? Math.abs(amps) / s.currentLoadAmps : 0;
+      let msg = !correctKind ? 'Род тока не совпадает с режимом: для постоянного выберите A⎓, для переменного — A~.'
+        : series ? 'Прибор включён в разрыв перед лампой. Ток рассчитан с учётом нагрузки, проводов и сопротивления амперметра.'
+        : hasVoltage ? 'Токовый вход подключён поперёк источника: короткое замыкание. Снимите щуп!'
+        : 'В выбранном участке нет источника тока. Для измерения тока лампы соедините клеммы 1–2 через прибор.';
+      if (Math.abs(amps)>10) msg += ' Ток выше 10 А: вход нагревается, допустимо только кратковременное измерение.';
+      return out(value,series && correctKind ? 'ok' : 'warn',msg,{lamp});
+    }
+    return out(0,'warn','Выберите режим измерения.');
+  }
+
+  function runSimulation(dt = 0) {
+    const range = DIAL_RANGES[state.dialIdx];
+    const path = inputPath(state,range);
+    const port = externalPort(state,state.redTerm,state.blackTerm);
+    const protection = updateProtection(state,path,port,dt);
+    for (const jack of protection.events) triggerFuseBlowVisual(jack);
+    const r = calculateReading(state,range);
+    // Lamp current belongs to the connected circuit, including a powered-off
+    // instrument and a different selected measurement function.
+    r.lamp = path.connected && state.benchObject === 'current_loop' &&
+      [state.redTerm,state.blackTerm].sort().join('') === 'LM' && !protection.events.length
+      ? protection.current / state.currentLoadAmps : 0;
+    if (path.connected && protection.current > 0.2 && (path.uses('mA') || path.uses('10A')) && !r.repair) {
+      const short = Math.abs(port.voltage)>0 && !(state.benchObject === 'current_loop' && [state.redTerm,state.blackTerm].sort().join('') === 'LM');
+      if (short || (path.uses('mA') && protection.current > METER.fuseLimit)) {
+        r.level='error'; r.message='Перегрузка токового входа! Через прибор идёт ' + protection.current.toFixed(2).replace('.',',') + ' А. Снимите щуп с источника.';
+      }
+    }
+    // Fuse or shunt damage is independent of the meter's battery indicator.
+    const fmt = numberToLcdFormat(r.value, range.mode === 'CONT' ? 1999 : range.max, range.decimals);
+    const visible = !state.powerOn ? 'Выключен' : fmt.overload ? '1 — перегрузка / обрыв' : numericText(r.value,range.decimals,r.unit);
+    if (fmt.overload && Number.isFinite(r.value) && state.powerOn && r.level !== 'error') {
+      r.level='warn'; r.message += ' Значение не помещается на этом пределе — выберите больший.';
+    }
+    document.getElementById('readingText').textContent = visible;
+    drawSevenSegmentDisplay({powered:state.powerOn,...fmt,ac:range.mode === 'ACV' || range.mode === 'ACA',
+      bat:false,cont:range.mode === 'CONT',text:visible});
+    setBuzzerSound(r.buzz && state.powerOn);
+    updateDiagBanner(r.level,r.message,r.repair || state.fuse200mABlown || state.shunt10ABlown);
+    const lamp = document.querySelector('[data-lamp]');
+    if (lamp) lamp.setAttribute('fill', r.lamp>0.05 ? `rgba(255,211,65,${Math.min(0.9,r.lamp*r.lamp)})` : '#2b303a');
+    const lampReading = document.querySelector('[data-lamp-reading]');
+    if (lampReading) {
+      const amps = r.lamp * state.currentLoadAmps;
+      lampReading.textContent = amps >= 1 ? numericText(amps,2,'А') : numericText(amps*1000,0,'мА');
+    }
+    lastResult = {...r,display:visible,overload:fmt.overload,current:protection.current};
+  }
+
+
+  /**********************************************************************
+   * 10. ИНИЦИАЛИЗАЦИЯ СТЕНДА
+   **********************************************************************/
+  window.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('rangeSelect').innerHTML = DIAL_RANGES.map((r,i) => `<option value="${i}">${rangeTitle(r)}</option>`).join('');
+    renderDialScale();
+    renderBenchBoard();
+    buildConnectionFields();
+
+    bindDragNode('blackProbeNode', 'blackProbe');
+    bindDragNode('redProbeNode', 'redProbe');
+    bindDragNode('blackPlugNode', 'blackPlug');
+    bindDragNode('redPlugNode', 'redPlug');
+
+    setTimeout(() => {
+      updateAllWirePositions();
+      runSimulation();
+      new ResizeObserver(() => updateAllWirePositions()).observe(document.getElementById('trainerStage'));
+    }, 50);
+  });
+
+  let lastTick = performance.now();
+  setInterval(() => {
+    const now = performance.now();
+    const dt = Math.min((now - lastTick) / 1000, 0.5); lastTick = now;
+    if (document.hidden) { setBuzzerSound(false); return; }
+    if (state.powerOn && now - lastActivity > 40 * 60 * 1000) {
+      state.powerOn = false; document.getElementById('powerBtn').classList.remove('pressed');
+      document.getElementById('powerBtn').setAttribute('aria-pressed', 'false');
+    }
+    runSimulation(dt);
+  }, 100);
+  window.addEventListener('pagehide', () => setBuzzerSound(false));
+  document.addEventListener('pointerdown', () => { lastActivity = performance.now(); }, {passive:true});
+  document.addEventListener('keydown', () => { lastActivity = performance.now(); });
+  document.addEventListener('visibilitychange', () => { if (document.hidden) setBuzzerSound(false); lastTick = performance.now(); });
+
+  window.addEventListener('resize', () => {
+    if (activeDragKind === null) looseProbes.clear();
+    updateAllWirePositions();
+  });
+</script>
+</body>
+</html>

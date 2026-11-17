@@ -1,0 +1,2964 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Лабораторная работа: Осциллограф GOS-620 (Метрология)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --crt-bg: #072112;
+            --crt-grid: #155e37;
+            --crt-beam: #39ff88;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b1120;
+            color: #f1f5f9;
+            overscroll-behavior-y: contain;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .font-mono-tech {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* CRT Screen Bezel & Glow */
+        .crt-frame {
+            background: linear-gradient(145deg, #1e293b, #0f172a);
+            box-shadow: inset 0 0 14px rgba(0,0,0,0.9), 0 4px 14px rgba(0,0,0,0.5);
+            border: 2px solid #334155;
+        }
+        .panel-metal {
+            background: linear-gradient(180deg, #e2e8f0 0%, #cbd5e1 100%);
+            color: #1e293b;
+            border: 1.5px solid #94a3b8;
+        }
+        .panel-section {
+            background: #f8fafc;
+            border: 1.5px solid #64748b;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .panel-header-tag {
+            background: #334155;
+            color: #ffffff;
+            letter-spacing: 0.05em;
+            font-size: 0.65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            padding: 2px 7px;
+            border-radius: 4px;
+        }
+        /* Custom Range Slider for Mobile Knobs */
+        input[type=range].gos-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 7px;
+            background: #cbd5e1;
+            border-radius: 6px;
+            outline: none;
+            border: 1px solid #94a3b8;
+        }
+        input[type=range].gos-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #1e293b;
+            border: 2px solid #38bdf8;
+            cursor: pointer;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+        .knob-dial {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #475569, #1e293b);
+            border: 2px solid #94a3b8;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.45), inset 0 1px 2px rgba(255,255,255,0.25);
+            position: relative;
+            transition: transform 0.16s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 2;
+        }
+        .knob-dial::after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 2.5px;
+            height: 9px;
+            background: #ef4444;
+            border-radius: 2px;
+        }
+        /* Rotary Scale Ring around VOLTS/DIV and TIME/DIV knobs */
+        .knob-scale-wrap {
+            position: relative;
+            width: 98px;
+            height: 82px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+        .knob-scale-tick {
+            position: absolute;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 7.5px;
+            font-weight: 700;
+            color: #475569;
+            padding: 1px 2.5px;
+            border-radius: 3px;
+            cursor: pointer;
+            line-height: 1;
+            transition: all 0.12s ease;
+            white-space: nowrap;
+        }
+        .knob-scale-tick:hover {
+            color: #0f172a;
+            background: rgba(148, 163, 184, 0.35);
+        }
+        .knob-scale-tick.active-tick-ch1 {
+            background: #0f172a;
+            color: #34d399;
+            box-shadow: 0 0 0 1px #10b981;
+        }
+        .knob-scale-tick.active-tick-ch2 {
+            background: #0f172a;
+            color: #38bdf8;
+            box-shadow: 0 0 0 1px #0ea5e9;
+        }
+        .knob-scale-tick.active-tick-time {
+            background: #0f172a;
+            color: #fbbf24;
+            box-shadow: 0 0 0 1px #f59e0b;
+        }
+        /* Compact CRT height transition & Fullscreen mode */
+        .crt-screen-box {
+            height: 185px;
+            max-width: 100%;
+            aspect-ratio: 10 / 8;
+            margin: 0 auto;
+            transition: height 0.2s ease;
+        }
+        .crt-screen-box.crt-full {
+            height: 62vh !important;
+            max-height: 520px;
+            width: auto;
+        }
+        @media (min-width: 640px) {
+            .crt-screen-box {
+                height: 240px;
+            }
+            .crt-screen-box.crt-full {
+                height: 68vh !important;
+            }
+        }
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+    </style>
+<style id="publication-navigation-style">.publication-nav{box-sizing:border-box;position:relative;z-index:40;display:flex;flex-wrap:wrap;gap:8px 20px;padding:12px 16px;background:#edf4f1;color:#164e46;border-bottom:1px solid #bdcec7;font:600 14px/1.5 Arial,sans-serif}.publication-nav a{color:#164e46;text-decoration:underline;min-height:24px;display:inline-flex;align-items:center}.publication-nav a:focus-visible{outline:2px solid currentColor;outline-offset:3px}@media print{.publication-nav{display:none!important}}</style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-emerald-500 selection:text-slate-950">
+<nav class="publication-nav" aria-label="Переходы по работе"><a href="../../index.html#practice">← Практические работы</a><a href="theory.html">Теория</a><a href="audio/lesson.html">Теория с озвучкой</a></nav>
+
+    <header class="bg-slate-900 border-b border-slate-800 px-2.5 py-1.5 z-40">
+        <div class="max-w-5xl mx-auto flex items-center justify-between gap-1.5">
+            <div class="flex items-center gap-1.5 min-w-0">
+                <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-mono-tech font-bold text-xs">GOS-620</span>
+                <span class="text-xs font-bold text-slate-200 truncate hidden sm:inline">Метрология • Изучение осциллографа</span>
+            </div>
+
+            <div class="flex items-center gap-1.5">
+                <div class="flex items-center bg-slate-800 rounded-lg px-1.5 py-0.5 border border-slate-700">
+                    <span class="text-[10px] text-slate-400 mr-1">Вар:</span>
+                    <select id="variantSelect" class="bg-transparent text-emerald-400 font-mono-tech font-bold text-xs focus:outline-none">
+                        <!-- 1..50 -->
+                    </select>
+                </div>
+
+                <button id="btnStudentModal" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-slate-200 px-2 py-1 rounded-lg border border-slate-700 font-medium truncate max-w-[115px]">
+                    <span id="studentBadgeText">👤 Фамилия / вариант</span>
+                </button>
+
+                <div class="flex items-center gap-0.5 bg-slate-950 px-2 py-1 rounded-lg border border-slate-800 font-mono-tech text-xs">
+                    <span id="totalScoreBadge" class="font-bold text-emerald-400">0</span>
+                    <span class="text-[10px] text-slate-500">/100</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div id="stickyCrtContainer" class="sticky top-0 z-30 bg-slate-950/95 backdrop-blur-md border-b border-slate-800 shadow-lg">
+        <div class="max-w-3xl mx-auto px-2 py-1.5 space-y-1.5">
+            <div class="crt-frame rounded-xl p-1.5 relative">
+                <!-- Single-line Micro Toolbar above CRT -->
+                <div class="flex items-center justify-between gap-1 pb-1 text-[10px] font-mono-tech flex-wrap">
+                    <div class="flex items-center gap-1">
+                        <span id="crtStatusBadge" class="px-1.5 py-0.5 rounded bg-slate-900 text-slate-500 border border-slate-700 font-bold">OFF</span>
+                        <span id="crtProbeBadge" class="px-1.5 py-0.5 rounded bg-slate-800 text-amber-300 border border-slate-700 font-bold">ГЕН</span>
+                        <span id="crtUncalBadge" class="hidden px-1.5 py-0.5 rounded bg-rose-950 text-rose-400 border border-rose-700/60 font-bold animate-pulse">UNCAL!</span>
+                        <button onclick="toggleCrtFullscreen()" id="btnCrtFull" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 font-bold" title="Развернуть экран осциллографа">
+                            ⛶ Полный
+                        </button>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button id="btnToggleCursor" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-700 transition">
+                            📏 Визир
+                        </button>
+                        <button id="btnToggleHints" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 transition">
+                            💡 RU
+                        </button>
+                        <button onclick="toggleTaskDrawer()" id="btnToggleTask" class="px-1.5 py-0.5 rounded bg-emerald-900/60 hover:bg-emerald-800/70 text-emerald-200 border border-emerald-600/50 font-sans font-semibold transition">
+                            📋 Задание ▴
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Compact 10:8 CRT Canvas Box -->
+                <div id="crtScreenBox" class="crt-screen-box relative rounded-lg overflow-hidden border border-slate-950 bg-[#072112]">
+                    <canvas id="crtCanvas" class="w-full h-full block touch-none"></canvas>
+
+                    <!-- Overlay when POWER is OFF -->
+                    <div id="powerOffOverlay" class="absolute inset-0 bg-slate-950/92 flex flex-col items-center justify-center text-center p-3 z-10">
+                        <p class="text-slate-400 font-mono-tech text-xs mb-2">ПИТАНИЕ ОСЦИЛЛОГРАФА ВЫКЛЮЧЕНО</p>
+                        <button onclick="togglePower(true)" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs px-3.5 py-1.5 rounded-lg shadow transition">
+                            Включить POWER ●
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Compact 1-Line Live Telemetry Bar under CRT -->
+                <div class="mt-1 grid grid-cols-4 gap-1 text-[10px] font-mono-tech bg-slate-900/95 px-2 py-0.5 rounded border border-slate-800/90">
+                    <div class="truncate"><span class="text-slate-500">M:</span><span id="hudMode" class="text-emerald-400 font-bold ml-0.5">CH1</span></div>
+                    <div class="truncate"><span class="text-slate-500">1:</span><span id="hudCh1" class="text-emerald-400 font-bold ml-0.5">1V/DC</span></div>
+                    <div class="truncate"><span class="text-slate-500">2:</span><span id="hudCh2" class="text-sky-400 font-bold ml-0.5">1V/DC</span></div>
+                    <div class="truncate"><span class="text-slate-500">T:</span><span id="hudTime" class="text-amber-400 font-bold ml-0.5">1ms</span></div>
+                </div>
+            </div>
+
+            <!-- STICKY COLLAPSIBLE TASK CARD -->
+            <div id="taskDrawerWrapper" class="bg-slate-900/95 border border-slate-700/90 rounded-xl px-2.5 py-1.5 text-xs shadow-md max-h-[28vh] overflow-y-auto">
+                <div id="activeTaskBanner">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-1 max-w-5xl w-full mx-auto px-2 sm:px-4 py-2 space-y-2.5">
+
+        <!-- 4-STAGE NAVIGATION TABS -->
+        <div class="grid grid-cols-4 gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
+            <button onclick="switchStage(1)" id="tabStage1" class="stage-tab py-1 px-1 rounded-lg text-[11px] font-bold transition flex flex-col items-center justify-center leading-tight">
+                <span>1. Настройка</span>
+                <span id="statusStage1" class="text-[9px] font-mono-tech opacity-80">0/30</span>
+            </button>
+            <button onclick="switchStage(2)" id="tabStage2" class="stage-tab py-1 px-1 rounded-lg text-[11px] font-bold transition flex flex-col items-center justify-center leading-tight">
+                <span>2. Измерения</span>
+                <span id="statusStage2" class="text-[9px] font-mono-tech opacity-80">0/35</span>
+            </button>
+            <button onclick="switchStage(3)" id="tabStage3" class="stage-tab py-1 px-1 rounded-lg text-[11px] font-bold transition flex flex-col items-center justify-center leading-tight">
+                <span>3. Масштаб</span>
+                <span id="statusStage3" class="text-[9px] font-mono-tech opacity-80">0/20</span>
+            </button>
+            <button onclick="switchStage(4)" id="tabStage4" class="stage-tab py-1 px-1 rounded-lg text-[11px] font-bold transition flex flex-col items-center justify-center leading-tight">
+                <span>4. Отчёт</span>
+                <span id="statusStage4" class="text-[9px] font-mono-tech opacity-80">0/15</span>
+            </button>
+        </div>
+
+        <section id="gosControlPanel" class="panel-metal rounded-2xl p-2 sm:p-3.5 shadow-xl space-y-2">
+            
+            <div class="flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-400 pb-1.5">
+                <div class="flex items-center gap-1.5">
+                    <span class="bg-slate-800 text-white font-mono-tech font-bold text-[11px] px-2 py-0.5 rounded">ПАНЕЛЬ GOS-620</span>
+                    <!-- Mobile Quick Filter Tabs for Panel Sections -->
+                    <div class="flex items-center bg-slate-300 p-0.5 rounded-lg border border-slate-400 text-[10px] font-bold">
+                        <button onclick="setPanelFilter('ALL')" id="fltALL" class="px-1.5 py-0.5 rounded bg-slate-800 text-white transition">Все</button>
+                        <button onclick="setPanelFilter('VERT')" id="fltVERT" class="px-1.5 py-0.5 rounded text-slate-700 transition">VERT</button>
+                        <button onclick="setPanelFilter('HORIZ')" id="fltHORIZ" class="px-1.5 py-0.5 rounded text-slate-700 transition">TIME</button>
+                        <button onclick="setPanelFilter('TRIG')" id="fltTRIG" class="px-1.5 py-0.5 rounded text-slate-700 transition">КАЛИБР/ЭЛТ</button>
+                    </div>
+                </div>
+
+                <div id="stage1ActionButtons" class="flex items-center gap-1.5 w-full sm:w-auto justify-end">
+                    <button onclick="scramblePanelForStage1()" class="text-[11px] bg-slate-200 hover:bg-slate-300 text-slate-800 border border-slate-400 px-2 py-1 rounded-lg font-semibold transition">
+                        🔄 Сброс
+                    </button>
+                    <button onclick="verifyStage1()" id="btnVerifyStage1" class="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-[11px] px-3 py-1 rounded-lg shadow transition">
+                        ✅ Проверить Шаг 1А (Калибровка)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feedback Banner inside the panel -->
+            <div id="panelCheckFeedback" class="hidden rounded-xl p-2.5 text-xs font-medium border"></div>
+
+            <!-- PROBE INPUT & CALIBRATION BAR -->
+            <div class="bg-slate-200/90 border border-slate-400 rounded-xl p-1.5 flex flex-wrap items-center justify-between gap-1.5">
+                <div class="flex items-center gap-1 flex-wrap">
+                    <span class="text-[10px] font-extrabold text-slate-800 uppercase px-1">Щуп входа:</span>
+                    <button onclick="updateControl('probeSource', 'CAL')" id="btnProbeCAL" class="px-2 py-0.5 rounded-lg text-[10px] font-mono-tech font-bold border transition">
+                        ⚡ Клемма CAL (2Vp-p, 1kHz)
+                    </button>
+                    <button onclick="updateControl('probeSource', 'GEN')" id="btnProbeGEN" class="px-2 py-0.5 rounded-lg text-[10px] font-mono-tech font-bold border transition">
+                        🔌 ГЕНЕРАТОР (Сигнал)
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <!-- VARIABLE CAL / UNCAL Lock Button -->
+                    <div class="flex items-center gap-1 bg-slate-300 px-1.5 py-0.5 rounded-lg border border-slate-400">
+                        <span id="ledUncal" class="w-2 h-2 rounded-full bg-rose-600 inline-block"></span>
+                        <span class="text-[9px] font-bold text-slate-700">VAR:</span>
+                        <button onclick="updateControl('varCalibrated', !state.varCalibrated)" id="btnVarCal" class="px-1.5 py-0.2 rounded text-[10px] font-mono-tech font-bold transition">
+                            CAL ✓
+                        </button>
+                    </div>
+
+                    <!-- TRACE ROTATION Screw -->
+                    <div class="flex items-center gap-1 bg-slate-300 px-1.5 py-0.5 rounded-lg border border-slate-400">
+                        <span class="text-[9px] font-bold text-slate-700" title="Выравнивание наклона луча">TRACE ROT:</span>
+                        <input type="range" id="rngTraceRot" min="-3" max="3" step="0.5" value="0" class="w-14 h-2 accent-slate-800 cursor-pointer" oninput="updateControl('traceRot', parseFloat(this.value))">
+                        <button onclick="updateControl('traceRot', 0)" id="lblTraceRot" class="text-[10px] font-mono-tech font-bold text-slate-900 underline" title="Выровнять 0°">0.0°</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4 MAIN BLOCKS OF GOS-620 -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-2">
+
+                <!-- BLOCK A: VERTICAL SECTION: CH1, MODE, CH2 -->
+                <div id="blockVERT" class="md:col-span-6 panel-section rounded-xl p-2 space-y-2 order-1 md:order-2">
+                    <div class="flex flex-wrap items-center justify-between gap-1">
+                        <span class="panel-header-tag">VERTICAL / КАНАЛЫ Y</span>
+                        <div class="flex items-center gap-0.5 bg-slate-300 p-0.5 rounded-lg border border-slate-400">
+                            <span class="text-[9px] font-extrabold text-slate-700 px-1">MODE:</span>
+                            <button onclick="updateControl('vertMode', 'CH1')" id="btnModeCH1" class="vmode-btn px-2 py-0.5 rounded text-[11px] font-mono-tech font-bold transition">CH1</button>
+                            <button onclick="updateControl('vertMode', 'CH2')" id="btnModeCH2" class="vmode-btn px-2 py-0.5 rounded text-[11px] font-mono-tech font-bold transition">CH2</button>
+                            <button onclick="updateControl('vertMode', 'DUAL')" id="btnModeDUAL" class="vmode-btn px-2 py-0.5 rounded text-[11px] font-mono-tech font-bold transition">DUAL</button>
+                            <button onclick="updateControl('vertMode', 'ADD')" id="btnModeADD" class="vmode-btn px-2 py-0.5 rounded text-[11px] font-mono-tech font-bold transition">ADD</button>
+                        </div>
+                    </div>
+
+                    <p class="ru-hint hidden text-[10px] text-amber-900 bg-amber-100/90 px-2 py-1 rounded border border-amber-300">
+                        <b>DC (Открытый вход)</b> — пропускает переменную + постоянную составляющую (<b>U<sub>0</sub></b>), поэтому луч смещается вверх/вниз на <b>U<sub>0</sub> / (VOLTS/DIV)</b> клеток. <b>AC (Закрытый вход)</b> — конденсатор отсекает <b>U<sub>0</sub></b>, центрируя сигнал. <b>GND</b> — замыкает вход на землю (линия 0 В).
+                    </p>
+
+                    <div class="grid grid-cols-2 gap-1.5">
+                        
+                        <!-- CHANNEL 1 (CH1) -->
+                        <div class="bg-slate-200/80 rounded-xl p-2 border border-slate-300 space-y-1.5">
+                            <div class="flex items-center justify-between border-b border-slate-300 pb-1">
+                                <span class="font-mono-tech font-extrabold text-[11px] text-slate-900 bg-emerald-300/80 px-1.5 py-0.2 rounded border border-emerald-500">CH1 (X)</span>
+                                <span class="text-[9px] font-semibold text-slate-600">Канал 1</span>
+                            </div>
+
+                            <!-- CH1 VOLTS/DIV with Rotary Scale Labels -->
+                            <div>
+                                <div class="flex justify-between items-center text-[10px] font-bold text-slate-800 mb-0.5">
+                                    <span>VOLTS/DIV</span>
+                                    <span id="lblCh1Volts" class="font-mono-tech text-[10px] bg-slate-900 text-emerald-400 px-1.5 py-0.2 rounded">1 V</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-0.5">
+                                    <button onclick="stepVolts(1, -1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-mono-tech font-bold text-xs flex items-center justify-center shadow shrink-0">−</button>
+                                    <div id="scaleWrapCh1" class="knob-scale-wrap">
+                                        <div id="dialCh1Volts" class="knob-dial"></div>
+                                    </div>
+                                    <button onclick="stepVolts(1, 1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-mono-tech font-bold text-xs flex items-center justify-center shadow shrink-0">+</button>
+                                </div>
+                            </div>
+
+                            <!-- CH1 AC-GND-DC -->
+                            <div>
+                                <div class="text-[9px] font-bold text-slate-700 mb-0.5">ВХОД CH1:</div>
+                                <div class="grid grid-cols-3 gap-0.5 bg-slate-300 p-0.5 rounded-lg border border-slate-400">
+                                    <button onclick="updateControl('ch1Coupling', 'AC')" id="btnCh1AC" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">AC</button>
+                                    <button onclick="updateControl('ch1Coupling', 'GND')" id="btnCh1GND" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">GND</button>
+                                    <button onclick="updateControl('ch1Coupling', 'DC')" id="btnCh1DC" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">DC</button>
+                                </div>
+                            </div>
+
+                            <!-- CH1 POSITION ▲▼ -->
+                            <div>
+                                <div class="flex justify-between items-center text-[9px] font-bold text-slate-700">
+                                    <span>POS ▲▼</span>
+                                    <button onclick="updateControl('ch1Pos', 0)" class="text-[9px] text-sky-700 underline">Центр</button>
+                                </div>
+                                <input type="range" id="rngCh1Pos" min="-4" max="4" step="0.2" value="0" class="gos-slider" oninput="updateControl('ch1Pos', parseFloat(this.value))">
+                            </div>
+                        </div>
+
+                        <!-- CHANNEL 2 (CH2) -->
+                        <div class="bg-slate-200/80 rounded-xl p-2 border border-slate-300 space-y-1.5">
+                            <div class="flex items-center justify-between border-b border-slate-300 pb-1">
+                                <span class="font-mono-tech font-extrabold text-[11px] text-slate-900 bg-sky-300/80 px-1.5 py-0.2 rounded border border-sky-500">CH2 (Y)</span>
+                                <button onclick="updateControl('ch2Inv', !state.ch2Inv)" id="btnCh2Inv" class="px-1.5 py-0.2 rounded text-[9px] font-mono-tech font-bold border transition" title="Инверсия канала 2">
+                                    INV
+                                </button>
+                            </div>
+
+                            <!-- CH2 VOLTS/DIV with Rotary Scale Labels -->
+                            <div>
+                                <div class="flex justify-between items-center text-[10px] font-bold text-slate-800 mb-0.5">
+                                    <span>VOLTS/DIV</span>
+                                    <span id="lblCh2Volts" class="font-mono-tech text-[10px] bg-slate-900 text-sky-400 px-1.5 py-0.2 rounded">1 V</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-0.5">
+                                    <button onclick="stepVolts(2, -1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-mono-tech font-bold text-xs flex items-center justify-center shadow shrink-0">−</button>
+                                    <div id="scaleWrapCh2" class="knob-scale-wrap">
+                                        <div id="dialCh2Volts" class="knob-dial"></div>
+                                    </div>
+                                    <button onclick="stepVolts(2, 1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-mono-tech font-bold text-xs flex items-center justify-center shadow shrink-0">+</button>
+                                </div>
+                            </div>
+
+                            <!-- CH2 AC-GND-DC -->
+                            <div>
+                                <div class="text-[9px] font-bold text-slate-700 mb-0.5">ВХОД CH2:</div>
+                                <div class="grid grid-cols-3 gap-0.5 bg-slate-300 p-0.5 rounded-lg border border-slate-400">
+                                    <button onclick="updateControl('ch2Coupling', 'AC')" id="btnCh2AC" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">AC</button>
+                                    <button onclick="updateControl('ch2Coupling', 'GND')" id="btnCh2GND" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">GND</button>
+                                    <button onclick="updateControl('ch2Coupling', 'DC')" id="btnCh2DC" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">DC</button>
+                                </div>
+                            </div>
+
+                            <!-- CH2 POSITION ▲▼ -->
+                            <div>
+                                <div class="flex justify-between items-center text-[9px] font-bold text-slate-700">
+                                    <span>POS ▲▼</span>
+                                    <button onclick="updateControl('ch2Pos', 0)" class="text-[9px] text-sky-700 underline">Центр</button>
+                                </div>
+                                <input type="range" id="rngCh2Pos" min="-4" max="4" step="0.2" value="0" class="gos-slider" oninput="updateControl('ch2Pos', parseFloat(this.value))">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- BLOCK B: HORIZONTAL & TRIGGER SECTION -->
+                <div id="blockHORIZ_TRIG" class="md:col-span-4 flex flex-col justify-between gap-2 order-2 md:order-3">
+                    
+                    <!-- HORIZONTAL SWEEP BLOCK -->
+                    <div id="subBlockHORIZ" class="panel-section rounded-xl p-2 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="panel-header-tag">HORIZONTAL / ВРЕМЯ</span>
+                            <button onclick="updateControl('x10Mag', !state.x10Mag)" id="btnX10Mag" class="px-2 py-0.5 rounded text-[10px] font-mono-tech font-bold border transition">
+                                x10 MAG
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-12 gap-1.5 items-center bg-slate-200/80 p-1.5 rounded-xl border border-slate-300">
+                            <div class="col-span-7">
+                                <div class="flex justify-between items-center text-[10px] font-bold text-slate-800 mb-0.5">
+                                    <span>TIME/DIV</span>
+                                    <span id="lblTimeDiv" class="font-mono-tech text-[10px] bg-slate-900 text-amber-400 px-1.5 py-0.2 rounded">1 ms</span>
+                                </div>
+                                <div class="flex items-center justify-between gap-0.5">
+                                    <button onclick="stepTime(-1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-mono-tech font-bold text-xs flex items-center justify-center shadow shrink-0">−</button>
+                                    <div id="scaleWrapTime" class="knob-scale-wrap">
+                                        <div id="dialTimeDiv" class="knob-dial"></div>
+                                    </div>
+                                    <button onclick="stepTime(1)" class="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 active:scale-95 text-white font-mono-tech font-bold text-xs flex items-center justify-center shadow shrink-0">+</button>
+                                </div>
+                            </div>
+
+                            <!-- Horizontal POSITION ◄► -->
+                            <div class="col-span-5 pl-1.5 border-l border-slate-300">
+                                <div class="flex justify-between items-center text-[9px] font-bold text-slate-700 mb-1">
+                                    <span>POS ◄►</span>
+                                    <button onclick="updateControl('horizPos', 0)" class="text-[9px] text-sky-700 underline">Центр</button>
+                                </div>
+                                <input type="range" id="rngHorizPos" min="-4" max="4" step="0.2" value="0" class="gos-slider" oninput="updateControl('horizPos', parseFloat(this.value))">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TRIGGER BLOCK -->
+                    <div id="subBlockTRIG" class="panel-section rounded-xl p-2 space-y-1.5">
+                        <div class="flex items-center justify-between">
+                            <span class="panel-header-tag">TRIGGER / СИНХР.</span>
+                            <button onclick="updateControl('trigSlope', state.trigSlope === '+' ? '-' : '+')" id="btnTrigSlope" class="px-2 py-0.5 rounded text-[10px] font-mono-tech font-bold bg-slate-800 text-white border border-slate-600">
+                                SLOPE: +
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <!-- TRIGGER SOURCE -->
+                            <div class="bg-slate-200/80 p-1 rounded-lg border border-slate-300">
+                                <div class="text-[9px] font-bold text-slate-700 mb-0.5">SOURCE (Канал):</div>
+                                <div class="grid grid-cols-3 gap-0.5 bg-slate-300 p-0.5 rounded border border-slate-400">
+                                    <button onclick="updateControl('trigSource', 'CH1')" id="btnTrigCH1" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">CH1</button>
+                                    <button onclick="updateControl('trigSource', 'CH2')" id="btnTrigCH2" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">CH2</button>
+                                    <button onclick="updateControl('trigSource', 'LINE')" id="btnTrigLINE" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">LINE</button>
+                                </div>
+                            </div>
+
+                            <!-- TRIGGER MODE -->
+                            <div class="bg-slate-200/80 p-1 rounded-lg border border-slate-300">
+                                <div class="text-[9px] font-bold text-slate-700 mb-0.5">MODE (Режим):</div>
+                                <div class="grid grid-cols-2 gap-0.5 bg-slate-300 p-0.5 rounded border border-slate-400">
+                                    <button onclick="updateControl('trigMode', 'AUTO')" id="btnTrigAUTO" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">AUTO</button>
+                                    <button onclick="updateControl('trigMode', 'NORM')" id="btnTrigNORM" class="py-0.5 rounded text-[10px] font-mono-tech font-bold transition">NORM</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TRIGGER LEVEL Knob -->
+                        <div class="bg-slate-200/80 px-2 py-1 rounded-lg border border-slate-300">
+                            <div class="flex justify-between items-center text-[10px] font-bold text-slate-800">
+                                <span>LEVEL (Уровень синхр.)</span>
+                                <span id="lblTrigLevel" class="font-mono-tech text-[10px] text-slate-900">0.0</span>
+                            </div>
+                            <input type="range" id="rngTrigLevel" min="-10" max="10" step="0.2" value="0" class="gos-slider" oninput="updateControl('trigLevel', parseFloat(this.value))">
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- BLOCK C: CRT & POWER SECTION -->
+                <div id="blockCRT" class="md:col-span-2 panel-section rounded-xl p-2 flex flex-col justify-between gap-1.5 order-3 md:order-1">
+                    <div class="flex items-center justify-between">
+                        <span class="panel-header-tag">ЭЛТ / ЛУЧ</span>
+                        <div class="flex items-center gap-1">
+                            <span id="powerLed" class="w-2.5 h-2.5 rounded-full bg-slate-600 inline-block"></span>
+                            <button onclick="togglePower()" id="btnPower" class="px-1.5 py-0.5 rounded font-mono-tech font-bold text-[10px] bg-slate-800 text-white border border-slate-600">
+                                POWER
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-1 gap-1.5">
+                        <!-- FOCUS Knob -->
+                        <div class="bg-slate-200/70 p-1.5 rounded-lg border border-slate-300">
+                            <div class="flex justify-between text-[10px] font-bold text-slate-800">
+                                <span>FOCUS</span>
+                                <span id="valFocus" class="font-mono-tech text-[10px]">50</span>
+                            </div>
+                            <input type="range" id="rngFocus" min="0" max="100" value="50" class="gos-slider" oninput="updateControl('focus', this.value)">
+                        </div>
+
+                        <!-- INTEN Knob -->
+                        <div class="bg-slate-200/70 p-1.5 rounded-lg border border-slate-300">
+                            <div class="flex justify-between text-[10px] font-bold text-slate-800">
+                                <span>INTEN</span>
+                                <span id="valInten" class="font-mono-tech text-[10px]">75%</span>
+                            </div>
+                            <input type="range" id="rngInten" min="15" max="100" value="75" class="gos-slider" oninput="updateControl('inten', this.value)">
+                        </div>
+                    </div>
+
+                    <div class="text-[9px] font-mono-tech bg-slate-800 text-slate-200 px-2 py-1 rounded flex items-center justify-between">
+                        <span>CAL ⏦ 1kHz 2Vp-p (0..+2V)</span>
+                        <button onclick="updateControl('probeSource', state.probeSource === 'CAL' ? 'GEN' : 'CAL')" id="btnCrtCalQuick" class="text-emerald-400 underline font-bold">Клемма</button>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section id="stage2FormSection" class="hidden bg-slate-900 border border-sky-500/40 rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                <div>
+                    <h2 class="text-xs sm:text-sm font-bold text-white">
+                        Этап 2: Расчёт параметров сигнала и постоянной составляющей U<sub>0</sub>
+                    </h2>
+                    <p class="text-[11px] text-slate-400">Переключайте вход между <code>AC</code>/<code>GND</code> и <code>DC</code>, чтобы увидеть смещение сигнала на величину постоянной составляющей U<sub>0</sub>:</p>
+                </div>
+                <button onclick="loadStage2Preset()" class="text-[11px] bg-slate-800 hover:bg-slate-700 text-sky-300 border border-slate-600 px-2.5 py-1 rounded-lg font-medium transition">
+                    🔄 Вернуть ручки Этапа 2
+                </button>
+            </div>
+
+            <!-- Formula Helper Accordion -->
+            <details class="bg-slate-950/70 border border-slate-800 rounded-xl p-2 text-xs text-slate-300">
+                <summary class="cursor-pointer font-semibold text-amber-300 select-none text-[11px]">📐 Как определить параметры и постоянную составляющую U<sub>0</sub> (шпаргалка)</summary>
+                <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] leading-relaxed border-t border-slate-800 pt-2">
+                    <div>
+                        <p>• <b>Размах (U<sub>p-p</sub>):</b> клетки от пика до пика по вертикали × <code class="text-emerald-400">VOLTS/DIV</code>.</p>
+                        <p>• <b>Амплитуда (U<sub>m</sub>):</b> U<sub>m</sub> = U<sub>p-p</sub> / 2.</p>
+                        <p>• <b>Действующее (U<sub>СКЗ</sub>):</b> Синус: U<sub>m</sub> / √2 (÷1.414) | Меандр: U<sub>m</sub> | Треугольник: U<sub>m</sub> / √3 (÷1.732).</p>
+                    </div>
+                    <div>
+                        <p class="text-emerald-300">• <b>Постоянная составляющая (U<sub>0</sub>):</b> переключите вход канала из <code>AC</code> (или <code>GND</code>) в <code>DC</code>. Посчитайте, на сколько клеток ΔY<sub>0</sub> сместился сигнал вверх (+) или вниз (−), и умножьте на <code class="text-emerald-400">VOLTS/DIV</code>!</p>
+                        <p>• <b>Период (T):</b> клетки на 1 период × <code class="text-amber-400">TIME/DIV</code> (при <code>x10 MAG</code> делите на 10). <b>Частота:</b> f = 1000 / T [мс].</p>
+                    </div>
+                </div>
+            </details>
+
+            <!-- 6 Parameter Input Cells -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <label class="block text-[10px] text-slate-400 font-medium mb-1">1. Активный канал</label>
+                    <select id="inpStage2Chan" onchange="clearStage2FeedbackItem('fbStage2Chan')" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono-tech">
+                        <option value="">-- Выберите --</option>
+                        <option value="CH1">Канал 1 (CH1)</option>
+                        <option value="CH2">Канал 2 (CH2)</option>
+                    </select>
+                    <p id="fbStage2Chan" class="text-[10px] mt-1 font-mono-tech hidden"></p>
+                </div>
+
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <label class="block text-[10px] text-slate-400 font-medium mb-1">2. Размах U<sub>p-p</sub> (В)</label>
+                    <input type="number" step="any" id="inpStage2Upp" oninput="clearStage2FeedbackItem('fbStage2Upp')" placeholder="Введите значение..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono-tech">
+                    <p id="fbStage2Upp" class="text-[10px] mt-1 font-mono-tech hidden"></p>
+                </div>
+
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <label class="block text-[10px] text-slate-400 font-medium mb-1">3. Амплитуда U<sub>m</sub> (В)</label>
+                    <input type="number" step="any" id="inpStage2Um" oninput="clearStage2FeedbackItem('fbStage2Um')" placeholder="Введите значение..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono-tech">
+                    <p id="fbStage2Um" class="text-[10px] mt-1 font-mono-tech hidden"></p>
+                </div>
+
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <label class="block text-[10px] text-slate-400 font-medium mb-1">4. Действ. U<sub>СКЗ</sub> (В)</label>
+                    <input type="number" step="any" id="inpStage2Urms" oninput="clearStage2FeedbackItem('fbStage2Urms')" placeholder="Введите значение..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono-tech">
+                    <p id="fbStage2Urms" class="text-[10px] mt-1 font-mono-tech hidden"></p>
+                </div>
+
+                <div class="bg-slate-950 p-2 rounded-xl border border-emerald-500/40">
+                    <label class="block text-[10px] text-emerald-300 font-semibold mb-1" title="Сравните положение сигнала в режимах AC и DC">5. Пост. сост. U<sub>0</sub> (В)</label>
+                    <input type="number" step="any" id="inpStage2Udc" oninput="clearStage2FeedbackItem('fbStage2Udc')" placeholder="Введите значение..." class="w-full bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-white font-mono-tech">
+                    <p id="fbStage2Udc" class="text-[10px] mt-1 font-mono-tech hidden"></p>
+                </div>
+
+                <div class="bg-slate-950 p-2 rounded-xl border border-slate-800">
+                    <label class="block text-[10px] text-slate-400 font-medium mb-1">6. T (мс) и f (Гц)</label>
+                    <div class="grid grid-cols-2 gap-1">
+                        <input type="number" step="any" id="inpStage2T" oninput="clearStage2FeedbackItem('fbStage2TF')" placeholder="T, мс" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-1.5 py-1.5 text-xs text-white font-mono-tech">
+                        <input type="number" step="any" id="inpStage2F" oninput="clearStage2FeedbackItem('fbStage2TF')" placeholder="f, Гц" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-1.5 py-1.5 text-xs text-white font-mono-tech">
+                    </div>
+                    <p id="fbStage2TF" class="text-[10px] mt-1 font-mono-tech hidden"></p>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div id="stage2SummaryMsg" class="text-xs font-medium text-slate-300"></div>
+                <div class="flex items-center gap-1.5 w-full sm:w-auto">
+                    <button onclick="resetStage2()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-2 rounded-xl border border-slate-700 transition">
+                        🔄 Сброс
+                    </button>
+                    <button onclick="verifyStage2()" class="flex-1 sm:flex-initial bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow transition">
+                        ✅ Проверить расчёты (Этап 2)
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- STAGE 3 INDEPENDENT SCALING MISSIONS -->
+        <section id="stage3Section" class="hidden bg-slate-900 border border-amber-500/40 rounded-2xl p-3 sm:p-4 shadow-lg space-y-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                    <h2 class="text-xs sm:text-sm font-bold text-white">Этап 3: Самостоятельный поиск сигнала и подбор масштаба</h2>
+                </div>
+                <div class="flex gap-1">
+                    <button onclick="selectMission(0)" id="btnMission0" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition">Задача 3.1 (10 б.)</button>
+                    <button onclick="selectMission(1)" id="btnMission1" class="px-2.5 py-1 rounded-lg text-[11px] font-bold border transition">Задача 3.2 (10 б.)</button>
+                </div>
+            </div>
+
+            <div id="missionDescriptionBox" class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-[11px] text-slate-200 space-y-1">
+                <!-- Populated by JS -->
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div id="stage3Feedback" class="text-xs font-medium text-slate-300 flex-1"></div>
+                <div class="flex gap-1.5 w-full sm:w-auto">
+                    <button onclick="resetCurrentMission()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs px-3 py-1.5 rounded-xl border border-slate-700 transition">
+                        🔄 Сброс
+                    </button>
+                    <button onclick="verifyStage3Mission()" class="flex-1 sm:flex-initial bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-4 py-1.5 rounded-xl shadow transition">
+                        🛠️ Проверить осциллограмму
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- STAGE 4 QUIZ & FINAL REPORT -->
+        <section id="stage4Section" class="hidden space-y-3">
+            <div class="bg-slate-900 border border-purple-500/40 rounded-2xl p-3 sm:p-4 shadow-lg space-y-3">
+                <h2 class="text-xs sm:text-sm font-bold text-white">
+                    Этап 4: Блиц-тест по органам управления GOS-620 (Вариант <span class="variantNumText">1</span>)
+                </h2>
+                <div id="quizContainer" class="space-y-2"></div>
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div id="stage4QuizFeedback" class="text-xs font-medium text-slate-300"></div>
+                    <button onclick="verifyStage4Quiz()" class="w-full sm:w-auto bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs px-4 py-2 rounded-xl shadow transition">
+                        🎓 Проверить ответы теста
+                    </button>
+                </div>
+            </div>
+
+            <!-- Final Student Report Card -->
+            <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-emerald-950/40 border border-emerald-500/40 rounded-2xl p-3.5 sm:p-5 shadow-xl space-y-3">
+                <div class="flex items-center justify-between gap-2 border-b border-slate-800 pb-2">
+                    <div>
+                        <span class="text-[10px] font-mono-tech uppercase px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300">Протокол</span>
+                        <h3 class="text-sm sm:text-base font-bold text-white mt-0.5">Ведомость лабораторной работы</h3>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xl sm:text-2xl font-mono-tech font-extrabold text-emerald-400"><span id="reportTotalScore">0</span>/100</div>
+                        <div id="reportGradeBadge" class="text-[11px] font-bold text-slate-400">Не завершено</div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-[11px] bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 font-mono-tech">
+                    <div><span class="text-slate-500">Студент:</span> <span id="reportStudentName" class="text-white font-bold">Не указано</span></div>
+                    <div><span class="text-slate-500">Группа:</span> <span id="reportStudentGroup" class="text-white font-bold">Не указана</span></div>
+                    <div><span class="text-slate-500">Вариант:</span> <span id="reportVariantNum" class="text-emerald-400 font-bold">1</span></div>
+                    <div><span class="text-slate-500">Код:</span> <span id="reportHashCode" class="text-amber-300 font-bold">---</span></div>
+                </div>
+
+                <div class="grid grid-cols-4 gap-1.5 text-[11px] text-center">
+                    <div class="bg-slate-950/60 p-1.5 rounded-lg border border-slate-800">
+                        <div class="text-slate-400 text-[10px]">Этап 1</div>
+                        <div id="reportS1" class="font-mono-tech font-bold text-white">0/30</div>
+                    </div>
+                    <div class="bg-slate-950/60 p-1.5 rounded-lg border border-slate-800">
+                        <div class="text-slate-400 text-[10px]">Этап 2</div>
+                        <div id="reportS2" class="font-mono-tech font-bold text-white">0/35</div>
+                    </div>
+                    <div class="bg-slate-950/60 p-1.5 rounded-lg border border-slate-800">
+                        <div class="text-slate-400 text-[10px]">Этап 3</div>
+                        <div id="reportS3" class="font-mono-tech font-bold text-white">0/20</div>
+                    </div>
+                    <div class="bg-slate-950/60 p-1.5 rounded-lg border border-slate-800">
+                        <div class="text-slate-400 text-[10px]">Этап 4</div>
+                        <div id="reportS4" class="font-mono-tech font-bold text-white">0/15</div>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="openStudentModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-xl border border-slate-700 transition">
+                        ✏️ ФИО / Группа
+                    </button>
+                    <button onclick="resetAllProgress()" class="bg-rose-950/70 hover:bg-rose-900 text-rose-200 text-xs font-semibold px-3 py-2 rounded-xl border border-rose-700/60 transition">
+                        🗑️ Сбросить весь прогресс
+                    </button>
+                    <button onclick="copyReportToClipboard()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold px-3 py-2 rounded-xl shadow transition">
+                        📋 Скопировать отчёт преподавателю
+                    </button>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- STUDENT INFO MODAL -->
+    <div id="studentModal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-4 shadow-2xl space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-2">
+                <h3 class="font-bold text-sm text-white">Данные студента и выбор варианта</h3>
+                <button onclick="closeStudentModal()" class="text-slate-400 hover:text-white text-sm">✕</button>
+            </div>
+            <div class="space-y-2.5 text-xs">
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Фамилия или ФИО студента:</label>
+                    <input type="text" id="modalStudentName" placeholder="Иванов Иван Иванович" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-emerald-400 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Учебная группа (необязательно):</label>
+                    <input type="text" id="modalStudentGroup" placeholder="Например: МС-21" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-emerald-400 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-slate-300 font-semibold mb-1">Номер варианта (1 – 50):</label>
+                    <input type="number" id="modalVariantNum" min="1" max="50" value="1" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-emerald-400 font-mono-tech font-bold focus:border-emerald-400 focus:outline-none">
+                </div>
+            </div>
+            <button onclick="saveStudentInfo()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs py-2.5 rounded-xl shadow transition">
+                Сохранить
+            </button>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toastBox" class="fixed bottom-3 right-3 z-50 hidden bg-slate-900 border border-emerald-500 text-white text-xs px-3.5 py-2.5 rounded-xl shadow-2xl max-w-xs"></div>
+
+    <script>
+        /**************************************************************************
+         * 1. AUTHENTIC GOS-620 SCALES & CONSTANTS
+         **************************************************************************/
+        const CONST = {
+            UNCAL_GAIN: 0.70,
+            TRACE_ROT_FACTOR: 1.8,
+            TRIG_PHASE_SHIFT: 0.5,
+            GRID_COLS: 10,
+            GRID_ROWS: 8,
+            MIN_TRIG_DIVS: 0.25,
+            STORAGE_KEY: 'gos620_metrology_lab_v4'
+        };
+
+        const VOLTS_DIV_STEPS = [
+            { val: 0.005, label: '5 mV' },
+            { val: 0.01,  label: '10 mV' },
+            { val: 0.02,  label: '20 mV' },
+            { val: 0.05,  label: '50 mV' },
+            { val: 0.1,   label: '0.1 V' },
+            { val: 0.2,   label: '0.2 V' },
+            { val: 0.5,   label: '0.5 V' },
+            { val: 1.0,   label: '1 V' },
+            { val: 2.0,   label: '2 V' },
+            { val: 5.0,   label: '5 V' }
+        ];
+
+        const TIME_DIV_STEPS = [
+            { val: 0.05, label: '50 µs' },
+            { val: 0.1,  label: '0.1 ms' },
+            { val: 0.2,  label: '0.2 ms' },
+            { val: 0.5,  label: '0.5 ms' },
+            { val: 1.0,  label: '1 ms' },
+            { val: 2.0,  label: '2 ms' },
+            { val: 5.0,  label: '5 ms' },
+            { val: 10.0, label: '10 ms' },
+            { val: 20.0, label: '20 ms' },
+            { val: 50.0, label: '50 ms' }
+        ];
+
+        const WAVE_NAMES_RU = {
+            sine: 'Синусоидальный',
+            square: 'Прямоугольный (меандр)',
+            triangle: 'Треугольный'
+        };
+
+        /**************************************************************************
+         * 2. DETERMINISTIC GENERATOR FOR 50 UNIQUE VARIANTS
+         **************************************************************************/
+        const VARIANTS = [];
+
+        function generate50Variants() {
+            const waveTypes = ['sine', 'square', 'triangle'];
+            const p2pDivOptions = [4.0, 4.4, 5.0, 5.6, 6.0];
+            const periodDivOptions = [2.0, 2.5, 4.0, 5.0];
+            const dcDivOffsets = [1.0, -1.0, 1.5, -1.5, 2.0, -2.0];
+
+            for (let i = 1; i <= 50; i++) {
+                const s1Channel = ((i * 7 + 3) % 11 < 6) ? 'CH1' : 'CH2';
+                const s1Coupling = (i % 3 === 0) ? 'AC' : 'DC';
+                const s1VoltsIdx = (i * 3 + 2) % VOLTS_DIV_STEPS.length;
+                const s1TimeIdx = (i * 2 + 1) % TIME_DIV_STEPS.length;
+                const s1Wave = waveTypes[i % 3];
+                const s1DivsY = p2pDivOptions[i % p2pDivOptions.length];
+                const s1DivsX = periodDivOptions[(i + 1) % periodDivOptions.length];
+                const s1AmpVolts = (s1DivsY / 2) * VOLTS_DIV_STEPS[s1VoltsIdx].val;
+                const s1PeriodMs = s1DivsX * TIME_DIV_STEPS[s1TimeIdx].val;
+                const s1DcDivs = dcDivOffsets[i % dcDivOffsets.length];
+                const s1DcOffset = +(s1DcDivs * VOLTS_DIV_STEPS[s1VoltsIdx].val).toFixed(4);
+
+                const s2Channel = ((i * 5 + 2) % 9 < 5) ? 'CH2' : 'CH1';
+                const s2VoltsIdx = (i + 4) % 7 + 2;
+                const s2TimeIdx = (i + 3) % 7 + 1;
+                const s2Wave = waveTypes[(i + 1) % 3];
+                const s2DivsY = p2pDivOptions[(i + 2) % p2pDivOptions.length];
+                const s2DivsX = periodDivOptions[i % periodDivOptions.length];
+                const s2X10Mag = (i % 5 === 0);
+
+                const s2VoltsPerDiv = VOLTS_DIV_STEPS[s2VoltsIdx].val;
+                const s2TimePerDiv = TIME_DIV_STEPS[s2TimeIdx].val;
+                const s2Upp = +(s2DivsY * s2VoltsPerDiv).toFixed(4);
+                const s2Um = +(s2Upp / 2).toFixed(4);
+                let s2Urms = s2Um / Math.sqrt(2);
+                if (s2Wave === 'square') s2Urms = s2Um;
+                if (s2Wave === 'triangle') s2Urms = s2Um / Math.sqrt(3);
+                s2Urms = +s2Urms.toFixed(4);
+
+                const s2DcDivs = dcDivOffsets[(i + 1) % dcDivOffsets.length];
+                const s2Udc = +(s2DcDivs * s2VoltsPerDiv).toFixed(4);
+
+                const effectiveTimeDiv = s2X10Mag ? (s2TimePerDiv / 10) : s2TimePerDiv;
+                const s2PeriodMs = +(s2DivsX * effectiveTimeDiv).toFixed(4);
+                const s2FreqHz = +(1000 / s2PeriodMs).toFixed(2);
+
+                // STAGE 3 MISSION 3.1 (Tied strictly to discrete steps so it's 100% solvable)
+                const m1Chan = ((i * 3 + 1) % 7 < 4) ? 'CH1' : 'CH2';
+                const m1Wave = waveTypes[(i + 2) % 3];
+                const m1VoltsIdx = (i * 2 + 3) % 5 + 4; // VOLTS_DIV index 4..8
+                const m1TimeIdx = (i * 3 + 1) % 5 + 2;  // TIME_DIV index 2..6
+                const m1TargetDivsY = [4, 5, 6][i % 3];
+                const m1PeriodsOnScreen = [2, 4, 5][i % 3];
+                const m1DivsPerPeriod = +(10 / m1PeriodsOnScreen).toFixed(2);
+                const m1VoltsVal = VOLTS_DIV_STEPS[m1VoltsIdx].val;
+                const m1TimeVal = TIME_DIV_STEPS[m1TimeIdx].val;
+                const m1Upp = +(m1TargetDivsY * m1VoltsVal).toFixed(4);
+                const m1Amp = +(m1Upp / 2).toFixed(4);
+                const m1PeriodMs = +(m1DivsPerPeriod * m1TimeVal).toFixed(4);
+                const m1FreqHz = +(1000 / m1PeriodMs).toFixed(1);
+                const m1DcVolts = +((i % 2 === 0 ? 3.0 : -3.0) * m1VoltsVal).toFixed(3);
+
+                // STAGE 3 MISSION 3.2 (Strictly tied to discrete steps)
+                const m2VoltsIdx1 = (i + 2) % 4 + 5;
+                const m2VoltsIdx2 = (i + 3) % 4 + 5;
+                const m2TimeIdx = (i + 1) % 4 + 3;
+                const m2TargetDivsY1 = 4;
+                const m2TargetDivsY2 = 4;
+                const m2Periods1 = 2;
+                const m2Periods2 = 5;
+                const m2Wave1 = waveTypes[i % 3];
+                const m2Wave2 = waveTypes[(i + 1) % 3];
+                const m2Amp1 = +((m2TargetDivsY1 / 2) * VOLTS_DIV_STEPS[m2VoltsIdx1].val).toFixed(4);
+                const m2Amp2 = +((m2TargetDivsY2 / 2) * VOLTS_DIV_STEPS[m2VoltsIdx2].val).toFixed(4);
+                const m2PeriodMs1 = +((10 / m2Periods1) * TIME_DIV_STEPS[m2TimeIdx].val).toFixed(4);
+                const m2PeriodMs2 = +((10 / m2Periods2) * TIME_DIV_STEPS[m2TimeIdx].val).toFixed(4);
+
+                VARIANTS.push({
+                    id: i,
+                    stage1: {
+                        channel: s1Channel,
+                        coupling: s1Coupling,
+                        voltsIdx: s1VoltsIdx,
+                        timeIdx: s1TimeIdx,
+                        wave: s1Wave,
+                        ampVolts: s1AmpVolts,
+                        periodMs: s1PeriodMs,
+                        dcDivs: s1DcDivs,
+                        dcOffset: s1DcOffset
+                    },
+                    stage2: {
+                        channel: s2Channel,
+                        voltsIdx: s2VoltsIdx,
+                        timeIdx: s2TimeIdx,
+                        wave: s2Wave,
+                        divsY: s2DivsY,
+                        divsX: s2DivsX,
+                        dcDivs: s2DcDivs,
+                        x10Mag: s2X10Mag,
+                        Upp: s2Upp,
+                        Um: s2Um,
+                        Urms: s2Urms,
+                        Udc: s2Udc,
+                        T_ms: s2PeriodMs,
+                        f_Hz: s2FreqHz
+                    },
+                    stage3: {
+                        m1: {
+                            channel: m1Chan,
+                            wave: m1Wave,
+                            voltsIdx: m1VoltsIdx,
+                            timeIdx: m1TimeIdx,
+                            targetDivsY: m1TargetDivsY,
+                            periodsOnScreen: m1PeriodsOnScreen,
+                            divsPerPeriod: m1DivsPerPeriod,
+                            Upp: m1Upp,
+                            amp: m1Amp,
+                            periodMs: m1PeriodMs,
+                            freqHz: m1FreqHz,
+                            dcVolts: m1DcVolts
+                        },
+                        m2: {
+                            voltsIdx1: m2VoltsIdx1,
+                            voltsIdx2: m2VoltsIdx2,
+                            timeIdx: m2TimeIdx,
+                            targetDivsY1: m2TargetDivsY1,
+                            targetDivsY2: m2TargetDivsY2,
+                            periods1: m2Periods1,
+                            periods2: m2Periods2,
+                            wave1: m2Wave1,
+                            wave2: m2Wave2,
+                            amp1: m2Amp1,
+                            amp2: m2Amp2,
+                            periodMs1: m2PeriodMs1,
+                            periodMs2: m2PeriodMs2
+                        }
+                    }
+                });
+            }
+        }
+        generate50Variants();
+
+        /**************************************************************************
+         * 3. STATE MANAGEMENT & STORAGE
+         **************************************************************************/
+        const state = {
+            variant: 1,
+            studentName: '',
+            studentGroup: '',
+            currentStage: 1,
+            stage1Substep: 'CAL',
+            stage1Initialized: false,
+            calSeenAC: false,
+            calSeenDC: false,
+            genSeenAC: false,
+            genSeenDC: false,
+            sawCalAcDc: false,
+            sawGenAcDc: false,
+            currentMission: 0,
+            stage3Attempts: [0, 0],
+            showHints: false,
+            showCursor: false,
+            crtFull: false,
+            taskOpen: true,
+            panelFilter: 'ALL',
+            cursorX: 2.0,
+            cursorY: 1.5,
+
+            scores: {
+                stage1Cal: 0,
+                stage1Gen: 0,
+                stage2: 0,
+                stage3m0: 0,
+                stage3m1: 0,
+                stage4: 0
+            },
+
+            power: false, // Initially OFF per user instruction
+            inten: 75,
+            focus: 50,
+            traceRot: 0,
+            probeSource: 'CAL',
+            varCalibrated: true,
+            vertMode: 'CH1',
+            ch1VoltsIdx: 7,
+            ch2VoltsIdx: 7,
+            ch1Coupling: 'DC',
+            ch2Coupling: 'DC',
+            ch1Pos: 0,
+            ch2Pos: 0,
+            ch2Inv: false,
+            timeDivIdx: 4,
+            horizPos: 0,
+            x10Mag: false,
+            trigSource: 'CH1',
+            trigMode: 'AUTO',
+            trigLevel: 0,
+            trigSlope: '+'
+        };
+
+        let activeQuizItems = [];
+
+        function getStage1Total() {
+            return (state.scores.stage1Cal || 0) + (state.scores.stage1Gen || 0);
+        }
+
+        function syncStudentVariantLock() {
+            const locked = getTotalScore() > 0;
+            for (const id of ['variantSelect', 'modalVariantNum']) {
+                const field = document.getElementById(id);
+                if (field) { field.disabled = locked; field.title = locked ? 'Вариант зафиксирован; для смены сбросьте весь прогресс.' : ''; }
+            }
+        }
+
+        function saveStateToStorage() {
+            syncStudentVariantLock();
+            try {
+                const payload = {
+                    variant: state.variant,
+                    studentName: state.studentName,
+                    studentGroup: state.studentGroup,
+                    scores: state.scores,
+                    sawCalAcDc: state.sawCalAcDc,
+                    sawGenAcDc: state.sawGenAcDc
+                };
+                localStorage.setItem(CONST.STORAGE_KEY, JSON.stringify(payload));
+            } catch (e) {}
+        }
+
+        function loadStateFromStorage() {
+            try {
+                const raw = localStorage.getItem(CONST.STORAGE_KEY);
+                if (!raw) return false;
+                const data = JSON.parse(raw);
+                if (data && typeof data === 'object') {
+                    if (data.variant >= 1 && data.variant <= 50) state.variant = data.variant;
+                    if (typeof data.studentName === 'string') state.studentName = data.studentName;
+                    if (typeof data.studentGroup === 'string') state.studentGroup = data.studentGroup;
+                    if (data.scores && typeof data.scores === 'object') {
+                        state.scores.stage1Cal = Number(data.scores.stage1Cal) || 0;
+                        state.scores.stage1Gen = Number(data.scores.stage1Gen) || 0;
+                        state.scores.stage2 = Number(data.scores.stage2) || 0;
+                        state.scores.stage3m0 = Number(data.scores.stage3m0) || 0;
+                        state.scores.stage3m1 = Number(data.scores.stage3m1) || 0;
+                        state.scores.stage4 = Number(data.scores.stage4) || 0;
+                    }
+                    state.sawCalAcDc = Boolean(data.sawCalAcDc);
+                    state.sawGenAcDc = Boolean(data.sawGenAcDc);
+                    if (state.sawCalAcDc) {
+                        state.calSeenAC = true;
+                        state.calSeenDC = true;
+                    }
+                    if (state.sawGenAcDc) {
+                        state.genSeenAC = true;
+                        state.genSeenDC = true;
+                    }
+                    return true;
+                }
+            } catch (e) {}
+            return false;
+        }
+
+        function resetAllProgress() {
+            try { localStorage.removeItem(CONST.STORAGE_KEY); } catch (e) {}
+            state.scores = { stage1Cal: 0, stage1Gen: 0, stage2: 0, stage3m0: 0, stage3m1: 0, stage4: 0 };
+            syncStudentVariantLock();
+            state.calSeenAC = false;
+            state.calSeenDC = false;
+            state.genSeenAC = false;
+            state.genSeenDC = false;
+            state.sawCalAcDc = false;
+            state.sawGenAcDc = false;
+            state.stage3Attempts = [0, 0];
+            state.stage1Initialized = false;
+            state.stage1Substep = 'CAL';
+            state.power = false;
+            resetStage2InputsAndFeedback();
+            buildQuizForVariant();
+            updateScoreUI();
+            switchStage(1);
+            showToast("Весь прогресс по варианту сброшен");
+        }
+
+        let inputSignals = {
+            CH1: { active: true, wave: 'sine', amp: 2.0, periodMs: 4.0, dc: 0, phase: 0 },
+            CH2: { active: false, wave: 'square', amp: 2.0, periodMs: 4.0, dc: 0, phase: 0 }
+        };
+
+        const CAL_SIGNAL = {
+            active: true,
+            wave: 'square',
+            amp: 1.0,
+            periodMs: 1.0,
+            dc: 1.0,
+            phase: 0
+        };
+
+        /**************************************************************************
+         * 4. QUIZ QUESTION POOL & Mulberry32 RNG
+         **************************************************************************/
+        function createSeededRng(seed) {
+            let a = seed >>> 0;
+            return function() {
+                let t = a += 0x6D2B79F5;
+                t = Math.imul(t ^ (t >>> 15), t | 1);
+                t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+                return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+            };
+        }
+
+        const QUIZ_POOL = [
+            {
+                q: "Почему при переключении тумблера входа из положения «AC» в положение «DC» синусоида на экране сместилась вверх на 2 клетки?",
+                options: [
+                    "В исследуемом сигнале присутствует постоянная составляющая U0 (+2 клетки × VOLTS/DIV), которую пропускает вход DC, а в режиме AC её отсекал разделительный конденсатор",
+                    "В положении DC чувствительность усилителя увеличивается в 2 раза",
+                    "Изменилась частота развёртки TIME/DIV",
+                    "Сработала кнопка растяжки x10 MAG"
+                ],
+                correct: 0
+            },
+            {
+                q: "Какие параметры имеет встроенный калибратор осциллографа GOS-620 (клемма «CAL 2Vp-p, 1kHz»)?",
+                options: [
+                    "Прямоугольный сигнал размахом 2 В и частотой 1 кГц (период 1 мс); при 0.5 V/DIV и 0.2 ms/DIV занимает 4 клетки по высоте и 5 клеток по периоду",
+                    "Синусоидальный сигнал 5 В, 50 Гц",
+                    "Треугольный сигнал 10 В, 10 кГц",
+                    "Клемма CAL используется только для заземления"
+                ],
+                correct: 0
+            },
+            {
+                q: "Что означает свечение индикатора «UNCAL» (расфиксирована ручка плавной регулировки усиления VAR)?",
+                options: [
+                    "Масштаб по вертикали не откалиброван и занижен относительно шкалы VOLTS/DIV; для точных измерений ручку VAR нужно защёлкнуть в положение CAL",
+                    "Луч осциллографа перегрелся",
+                    "Включена внешняя синхронизация от сети 50 Гц",
+                    "Переключатель входа установлен в GND"
+                ],
+                correct: 0
+            },
+            {
+                q: "Какой орган управления GOS-620 вращать, если изображение сигнала непрерывно «бежит» по экрану?",
+                options: [
+                    "Ручку LEVEL в блоке TRIGGER (убедившись в правильности выбора SOURCE)",
+                    "Переключатель VOLTS/DIV",
+                    "Ручку FOCUS",
+                    "Кнопку CH2 INV"
+                ],
+                correct: 0
+            },
+            {
+                q: "Что происходит в режиме «GND» тумблера AC-GND-DC?",
+                options: [
+                    "Вход отключается от сигнала и замыкается на корпус, фиксируя опорную линию нулевого потенциала (0 В)",
+                    "Сигнал увеличивается в 10 раз",
+                    "Отсекается переменная составляющая",
+                    "Прибор переходит в режим частотомера"
+                ],
+                correct: 0
+            },
+            {
+                q: "Как меняется отсчёт периода T при нажатии кнопки «x10 MAG» на панели HORIZONTAL?",
+                options: [
+                    "Развёртка растягивается в 10 раз, поэтому измеренный по клеткам период нужно разделить на 10",
+                    "Амплитуда сигнала увеличивается в 10 раз",
+                    "Период умножается на 10",
+                    "Кнопка влияет только на яркость"
+                ],
+                correct: 0
+            },
+            {
+                q: "Для чего предназначен регулятор «TRACE ROTATION»?",
+                options: [
+                    "Для компенсации магнитного поля Земли и выравнивания горизонтальной линии луча параллельно сетке экрана",
+                    "Для переключения между CH1 и CH2",
+                    "Для изменения частоты калибратора",
+                    "Для инверсии фазы"
+                ],
+                correct: 0
+            },
+            {
+                q: "В каком режиме MODE на экране отображается алгебраическая сумма сигналов (CH1 + CH2)?",
+                options: [
+                    "В режиме ADD (при нажатии CH2 INV получается разность CH1 − CH2)",
+                    "В режиме DUAL",
+                    "В режиме AUTO",
+                    "В режиме x10 MAG"
+                ],
+                correct: 0
+            },
+            {
+                q: "В чём отличие режимов развёртки «AUTO» и «NORM» в блоке TRIGGER?",
+                options: [
+                    "В AUTO развёртка видна на экране даже без сигнала, а в NORM экран тёмный, пока сигнал не достигнет уровня LEVEL",
+                    "В AUTO прибор сам выбирает VOLTS/DIV",
+                    "Режим NORM только для постоянного тока",
+                    "AUTO увеличивает частоту в 10 раз"
+                ],
+                correct: 0
+            },
+            {
+                q: "Что произойдет с осциллограммой CH2 при нажатии кнопки «INV» (CH2 INV)?",
+                options: [
+                    "Сигнал канала CH2 инвертируется по фазе на 180° (перевернётся по вертикали)",
+                    "Канал переключится в GND",
+                    "Период увеличится в 2 раза",
+                    "Каналы поменяются местами"
+                ],
+                correct: 0
+            },
+            {
+                q: "Размах синусоиды 6 клеток при VOLTS/DIV = 0.5 V (CAL). Чему равна амплитуда Um?",
+                options: [
+                    "Um = 1.5 В (Upp = 6 × 0.5 = 3.0 В; Um = Upp / 2 = 1.5 В)",
+                    "Um = 3.0 В",
+                    "Um = 6.0 В",
+                    "Um = 0.75 В"
+                ],
+                correct: 0
+            },
+            {
+                q: "Один период занимает 4 клетки при TIME/DIV = 0.5 ms (x10 MAG выкл). Чему равны T и f?",
+                options: [
+                    "T = 2.0 мс, f = 500 Гц (T = 4 × 0.5 мс = 2 мс; f = 1000 / 2 = 500 Гц)",
+                    "T = 4.0 мс, f = 250 Гц",
+                    "T = 0.2 мс, f = 5000 Гц",
+                    "T = 8.0 мс, f = 125 Гц"
+                ],
+                correct: 0
+            }
+        ];
+
+        /**************************************************************************
+         * 5. UI HELPERS & ROTARY SCALES
+         **************************************************************************/
+        function toggleCrtFullscreen() {
+            state.crtFull = !state.crtFull;
+            applyCrtSizeClasses();
+        }
+
+        function applyCrtSizeClasses() {
+            const box = document.getElementById('crtScreenBox');
+            const btnFull = document.getElementById('btnCrtFull');
+            box.classList.toggle('crt-full', state.crtFull);
+            btnFull.textContent = state.crtFull ? '🗗 Свернуть' : '⛶ Полный';
+            btnFull.className = state.crtFull
+                ? "px-1.5 py-0.5 rounded bg-emerald-600 text-white border border-emerald-400 font-bold"
+                : "px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-slate-700 font-bold";
+        }
+
+        function buildRotaryScaleLabels() {
+            const createRing = (wrapId, steps, onSelectFn, tickPrefix) => {
+                const wrap = document.getElementById(wrapId);
+                if (!wrap) return;
+                wrap.querySelectorAll('.knob-scale-tick').forEach(el => el.remove());
+
+                const rx = 38;
+                const ry = 31;
+                steps.forEach((st, idx) => {
+                    const angleDeg = -130 + (idx / (steps.length - 1)) * 260;
+                    const rad = (angleDeg - 90) * (Math.PI / 180);
+                    const x = 49 + rx * Math.cos(rad);
+                    const y = 43 + ry * Math.sin(rad);
+
+                    const span = document.createElement('span');
+                    span.id = `${tickPrefix}_${idx}`;
+                    span.className = 'knob-scale-tick';
+                    span.textContent = st.label.replace(' ', '');
+                    span.style.left = `${x}px`;
+                    span.style.top = `${y}px`;
+                    span.style.transform = 'translate(-50%, -50%)';
+                    span.title = `Установить ${st.label}`;
+                    span.addEventListener('click', () => onSelectFn(idx));
+                    wrap.appendChild(span);
+                });
+            };
+
+            createRing('scaleWrapCh1', VOLTS_DIV_STEPS, (idx) => {
+                state.ch1VoltsIdx = idx;
+                clearActiveStageFeedbackOnControlChange();
+                syncPanelUI();
+            }, 'tickCh1V');
+
+            createRing('scaleWrapCh2', VOLTS_DIV_STEPS, (idx) => {
+                state.ch2VoltsIdx = idx;
+                clearActiveStageFeedbackOnControlChange();
+                syncPanelUI();
+            }, 'tickCh2V');
+
+            createRing('scaleWrapTime', TIME_DIV_STEPS, (idx) => {
+                state.timeDivIdx = idx;
+                clearActiveStageFeedbackOnControlChange();
+                syncPanelUI();
+            }, 'tickTime');
+        }
+
+        function toggleTaskDrawer(forceOpen) {
+            state.taskOpen = (typeof forceOpen === 'boolean') ? forceOpen : !state.taskOpen;
+            const wrap = document.getElementById('taskDrawerWrapper');
+            const btn = document.getElementById('btnToggleTask');
+            wrap.classList.toggle('hidden', !state.taskOpen);
+            btn.textContent = state.taskOpen ? '📋 Задание ▴' : '📋 Задание ▾';
+        }
+
+        function setPanelFilter(mode) {
+            state.panelFilter = mode;
+            ['ALL', 'VERT', 'HORIZ', 'TRIG'].forEach(m => {
+                const b = document.getElementById(`flt${m}`);
+                b.className = (m === mode)
+                    ? "px-1.5 py-0.5 rounded bg-slate-800 text-white transition"
+                    : "px-1.5 py-0.5 rounded text-slate-700 hover:bg-slate-200 transition";
+            });
+
+            const bVert = document.getElementById('blockVERT');
+            const bHT = document.getElementById('blockHORIZ_TRIG');
+            const subH = document.getElementById('subBlockHORIZ');
+            const subT = document.getElementById('subBlockTRIG');
+            const bCrt = document.getElementById('blockCRT');
+
+            bVert.classList.toggle('hidden', mode !== 'ALL' && mode !== 'VERT');
+            bHT.classList.toggle('hidden', mode !== 'ALL' && mode !== 'HORIZ' && mode !== 'TRIG');
+            subH.classList.toggle('hidden', mode === 'TRIG');
+            subT.classList.toggle('hidden', mode === 'HORIZ');
+            bCrt.classList.toggle('hidden', mode !== 'ALL' && mode !== 'TRIG');
+        }
+
+        /**************************************************************************
+         * 6. INITIALIZATION & VARIANT SETUP
+         **************************************************************************/
+        function initApp() {
+            const sel = document.getElementById('variantSelect');
+            sel.innerHTML = '';
+            for (let i = 1; i <= 50; i++) {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.textContent = `№${i}`;
+                sel.appendChild(opt);
+            }
+            sel.addEventListener('change', (e) => {
+                const newVar = parseInt(e.target.value, 10);
+                if (getTotalScore() > 0) { sel.value = state.variant; return; }
+                if (newVar !== state.variant && getTotalScore() > 0) {
+                    if (!confirm("При смене варианта текущий прогресс будет сброшен. Продолжить?")) {
+                        sel.value = state.variant;
+                        return;
+                    }
+                }
+                setVariant(newVar);
+            });
+
+            document.getElementById('btnStudentModal').addEventListener('click', openStudentModal);
+            document.getElementById('btnToggleHints').addEventListener('click', () => {
+                state.showHints = !state.showHints;
+                document.querySelectorAll('.ru-hint').forEach(el => {
+                    el.classList.toggle('hidden', !state.showHints);
+                });
+                document.getElementById('btnToggleHints').classList.toggle('bg-amber-500/30', state.showHints);
+            });
+
+            document.getElementById('btnToggleCursor').addEventListener('click', () => {
+                state.showCursor = !state.showCursor;
+                const btn = document.getElementById('btnToggleCursor');
+                btn.textContent = state.showCursor ? '📏 ВКЛ' : '📏 Визир';
+                btn.classList.toggle('bg-sky-500/30', state.showCursor);
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape') {
+                    const modal = document.getElementById('studentModal');
+                    if (modal && !modal.classList.contains('hidden')) {
+                        closeStudentModal();
+                    } else if (state.crtFull) {
+                        toggleCrtFullscreen();
+                    }
+                }
+            });
+
+            buildRotaryScaleLabels();
+            setupCanvasCursorDrag();
+            const restored = loadStateFromStorage();
+            if (restored) {
+                const badge = document.getElementById('studentBadgeText');
+                badge.textContent = state.studentName ? `👤 ${state.studentName.split(' ')[0]}` : '👤 Студент';
+                setVariant(state.variant, true);
+            } else {
+                setVariant(1, false);
+            }
+            if (!state.studentName.trim()) openStudentModal();
+            requestAnimationFrame(renderCRTLoop);
+        }
+
+        function setVariant(vNum, preserveProgress = false) {
+            state.variant = Math.max(1, Math.min(50, vNum));
+            document.getElementById('variantSelect').value = state.variant;
+            document.getElementById('modalVariantNum').value = state.variant;
+            document.querySelectorAll('.variantNumText').forEach(el => el.textContent = state.variant);
+
+            if (!preserveProgress) {
+                state.scores = { stage1Cal: 0, stage1Gen: 0, stage2: 0, stage3m0: 0, stage3m1: 0, stage4: 0 };
+                state.calSeenAC = false;
+                state.calSeenDC = false;
+                state.genSeenAC = false;
+                state.genSeenDC = false;
+                state.sawCalAcDc = false;
+                state.sawGenAcDc = false;
+                state.stage3Attempts = [0, 0];
+            }
+            state.stage1Initialized = false;
+            state.stage1Substep = 'CAL';
+            state.power = false; // Always OFF initially
+            hidePanelFeedback();
+            resetStage2InputsAndFeedback();
+            updateScoreUI();
+            buildQuizForVariant();
+            switchStage(1);
+            saveStateToStorage();
+        }
+
+        /**************************************************************************
+         * 7. STAGE SWITCHING & SCENARIO CONFIGURATION
+         **************************************************************************/
+        function switchStage(stageNum) {
+            state.currentStage = stageNum;
+            hidePanelFeedback();
+
+            for (let s = 1; s <= 4; s++) {
+                const tab = document.getElementById(`tabStage${s}`);
+                if (s === stageNum) {
+                    tab.className = "stage-tab py-1 px-1 rounded-lg text-[11px] font-bold transition flex flex-col items-center justify-center leading-tight bg-emerald-600 text-white shadow";
+                } else {
+                    tab.className = "stage-tab py-1 px-1 rounded-lg text-[11px] font-bold transition flex flex-col items-center justify-center leading-tight bg-slate-800/80 text-slate-300 hover:bg-slate-800";
+                }
+            }
+
+            document.getElementById('stage1ActionButtons').classList.toggle('hidden', stageNum !== 1);
+            document.getElementById('stage2FormSection').classList.toggle('hidden', stageNum !== 2);
+            document.getElementById('stage3Section').classList.toggle('hidden', stageNum !== 3);
+            document.getElementById('stage4Section').classList.toggle('hidden', stageNum !== 4);
+            document.getElementById('gosControlPanel').classList.toggle('hidden', stageNum === 4);
+
+            const vData = VARIANTS[state.variant - 1];
+
+            if (stageNum === 1) {
+                configureStage1(vData);
+            } else if (stageNum === 2) {
+                loadStage2Preset();
+            } else if (stageNum === 3) {
+                selectMission(state.currentMission);
+            } else if (stageNum === 4) {
+                configureStage4Banner();
+                updateReportCard();
+            }
+            syncPanelUI();
+        }
+
+        function configureStage1(vData) {
+            const s1 = vData.stage1;
+            inputSignals.CH1 = {
+                active: s1.channel === 'CH1',
+                wave: s1.wave,
+                amp: s1.ampVolts,
+                periodMs: s1.periodMs,
+                dc: s1.dcOffset,
+                phase: 0
+            };
+            inputSignals.CH2 = {
+                active: s1.channel === 'CH2',
+                wave: s1.wave,
+                amp: s1.ampVolts,
+                periodMs: s1.periodMs,
+                dc: s1.dcOffset,
+                phase: 0
+            };
+
+            if (!state.stage1Initialized) {
+                scramblePanelForStage1(true);
+                state.stage1Initialized = true;
+            }
+            renderStage1Banner();
+        }
+
+        function setStage1Substep(sub) {
+            const prevSub = state.stage1Substep;
+            state.stage1Substep = sub;
+            hidePanelFeedback();
+
+            if (sub === 'GEN' && prevSub !== 'GEN' && state.scores.stage1Gen < 20) {
+                const s1 = VARIANTS[state.variant - 1].stage1;
+                state.vertMode = (s1.channel === 'CH1') ? 'CH2' : 'CH1';
+                state.ch1Coupling = 'GND';
+                state.ch2Coupling = 'GND';
+                state.trigSource = 'LINE';
+                state.trigLevel = 8.4;
+            }
+            renderStage1Banner();
+            syncPanelUI();
+        }
+
+        function renderStage1Banner() {
+            if (state.currentStage !== 1) return;
+            const s1 = VARIANTS[state.variant - 1].stage1;
+            const targetVoltsLabel = VOLTS_DIV_STEPS[s1.voltsIdx].label;
+            const targetTimeLabel = TIME_DIV_STEPS[s1.timeIdx].label;
+            const dcSign = s1.dcOffset >= 0 ? '+' : '';
+
+            const btnVerify = document.getElementById('btnVerifyStage1');
+            if (btnVerify) {
+                btnVerify.textContent = state.stage1Substep === 'CAL'
+                    ? '✅ Проверить Шаг 1А (Калибровка)'
+                    : '✅ Проверить Шаг 1Б (Сигнал варианта)';
+            }
+
+            const badgeCls = (ok) => ok
+                ? "bg-emerald-950/90 border-emerald-500/60 text-emerald-300"
+                : "bg-slate-950 border-slate-800 text-slate-300";
+
+            const tabCalCls = state.stage1Substep === 'CAL'
+                ? "bg-amber-500 text-slate-950 font-extrabold border-amber-400"
+                : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700";
+            const tabGenCls = state.stage1Substep === 'GEN'
+                ? "bg-emerald-500 text-slate-950 font-extrabold border-emerald-400"
+                : "bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700";
+
+            if (state.stage1Substep === 'CAL') {
+                const probeOk = state.power && state.probeSource === 'CAL';
+                const modeOk = state.power && (state.vertMode === s1.channel || state.vertMode === 'DUAL');
+                const activeVoltsIdx = s1.channel === 'CH1' ? state.ch1VoltsIdx : state.ch2VoltsIdx;
+                const activeCoupling = s1.channel === 'CH1' ? state.ch1Coupling : state.ch2Coupling;
+                const scaleOk = state.power && activeVoltsIdx === 6 && state.timeDivIdx === 2 && !state.x10Mag;
+                const coupOk = state.power && (activeCoupling === 'DC' || activeCoupling === 'AC') && state.sawCalAcDc;
+                const varOk = state.power && state.varCalibrated;
+                const rotOk = state.power && Math.abs(state.traceRot) <= 0.2 && Math.abs(state.focus - 50) <= 15;
+
+                document.getElementById('activeTaskBanner').innerHTML = `
+                    <div class="flex flex-wrap items-center justify-between gap-1 mb-1.5">
+                        <div class="flex items-center gap-1">
+                            <button onclick="setStage1Substep('CAL')" class="px-2 py-0.5 rounded-lg text-[10px] border transition ${tabCalCls}">
+                                Шаг 1А: Калибровка (${state.scores.stage1Cal}/10 б.)
+                            </button>
+                            <button onclick="setStage1Substep('GEN')" class="px-2 py-0.5 rounded-lg text-[10px] border transition ${tabGenCls}">
+                                Шаг 1Б: Сигнал №${state.variant} (${state.scores.stage1Gen}/20 б.)
+                            </button>
+                        </div>
+                        <button onclick="toggleTaskDrawer(false)" class="text-[10px] text-slate-400 hover:text-white px-1">Свернуть ▴</button>
+                    </div>
+                    <p class="text-[11px] text-slate-300 mb-1.5">
+                        Включите питание (<b>POWER</b>) и проверьте калибровку канала <b>${s1.channel}</b> от клеммы <b>CAL 2Vp-p, 1kHz</b> (меандр 4×5 клеток; переключите входы <b>AC ↔ DC</b>):
+                    </p>
+                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-1 font-mono-tech text-[10px]">
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(probeOk)}">${probeOk ? '✓' : '1.'} <b>POWER+CAL</b></div>
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(modeOk)}">${modeOk ? '✓' : '2.'} MODE: <b>${s1.channel}</b></div>
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(coupOk)}" title="Переключите между AC и DC">${coupOk ? '✓' : '3.'} Тест: <b>AC↔DC</b></div>
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(scaleOk)}">${scaleOk ? '✓' : '4.'} <b>0.5V / 0.2ms</b></div>
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(varOk)}">${varOk ? '✓' : '5.'} VAR: <b>CAL ✓</b></div>
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(rotOk)}">${rotOk ? '✓' : '6.'} <b>ROT 0°+FOCUS</b></div>
+                    </div>
+                `;
+            } else {
+                const probeOk = state.power && state.probeSource === 'GEN';
+                const modeOk = state.power && (state.vertMode === s1.channel || state.vertMode === 'DUAL');
+                const activeCoupling = s1.channel === 'CH1' ? state.ch1Coupling : state.ch2Coupling;
+                const coupOk = state.power && activeCoupling === s1.coupling && state.sawGenAcDc;
+                const activeVoltsIdx = s1.channel === 'CH1' ? state.ch1VoltsIdx : state.ch2VoltsIdx;
+                const voltsOk = state.power && activeVoltsIdx === s1.voltsIdx && state.varCalibrated;
+                const timeOk = state.power && state.timeDivIdx === s1.timeIdx && !state.x10Mag;
+                const trigOk = state.power && state.trigSource === s1.channel && isSignalTriggered() && Math.abs(state.focus - 50) <= 15;
+
+                document.getElementById('activeTaskBanner').innerHTML = `
+                    <div class="flex flex-wrap items-center justify-between gap-1 mb-1.5">
+                        <div class="flex items-center gap-1">
+                            <button onclick="setStage1Substep('CAL')" class="px-2 py-0.5 rounded-lg text-[10px] border transition ${tabCalCls}">
+                                Шаг 1А: Калибровка (${state.scores.stage1Cal}/10 б.)
+                            </button>
+                            <button onclick="setStage1Substep('GEN')" class="px-2 py-0.5 rounded-lg text-[10px] border transition ${tabGenCls}">
+                                Шаг 1Б: Сигнал №${state.variant} (${state.scores.stage1Gen}/20 б.)
+                            </button>
+                        </div>
+                        <button onclick="toggleTaskDrawer(false)" class="text-[10px] text-slate-400 hover:text-white px-1">Свернуть ▴</button>
+                    </div>
+                    <p class="text-[11px] text-slate-300 mb-1.5">
+                        На генераторе: <b>${WAVE_NAMES_RU[s1.wave].toLowerCase()}</b> с U<sub>0</sub> = <b>${dcSign}${s1.dcOffset} В</b>. Переключите <code>AC ↔ DC</code> (оставив в <b>${s1.coupling}</b>):
+                    </p>
+                    <div class="grid grid-cols-3 sm:grid-cols-6 gap-1 font-mono-tech text-[10px]">
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(probeOk)}">${probeOk ? '✓' : '1.'} Щуп: <b>ГЕНЕР.</b></div>
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(modeOk)}">${modeOk ? '✓' : '2.'} MODE: <b>${s1.channel}</b></div>
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(coupOk)}" title="Сравните AC и DC и оставьте в ${s1.coupling}">${coupOk ? '✓' : '3.'} Вход: <b>${s1.coupling} (AC↔DC)</b></div>
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(voltsOk)}">${voltsOk ? '✓' : '4.'} V/DIV: <b>${targetVoltsLabel}</b></div>
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(timeOk)}">${timeOk ? '✓' : '5.'} T/DIV: <b>${targetTimeLabel}</b></div>
+                        <div class="px-1.5 py-1 rounded border ${badgeCls(trigOk)}">${trigOk ? '✓' : '6.'} <b>TRIG ${s1.channel}+LVL</b></div>
+                    </div>
+                `;
+            }
+        }
+
+        function scramblePanelForStage1(silent = false) {
+            const s1 = VARIANTS[state.variant - 1].stage1;
+            state.power = false; // POWER OFF initially
+            state.inten = 75;
+            state.focus = 18;
+            state.traceRot = (state.variant % 2 === 0) ? 2.0 : -2.0;
+            state.probeSource = 'CAL';
+            state.varCalibrated = false;
+            state.vertMode = (s1.channel === 'CH1') ? 'CH2' : 'CH1';
+            state.ch1Coupling = 'GND';
+            state.ch2Coupling = 'GND';
+            state.ch1VoltsIdx = (s1.voltsIdx + 3) % VOLTS_DIV_STEPS.length;
+            state.ch2VoltsIdx = (s1.voltsIdx + 3) % VOLTS_DIV_STEPS.length;
+            state.timeDivIdx = (s1.timeIdx + 3) % TIME_DIV_STEPS.length;
+            state.ch1Pos = 0;
+            state.ch2Pos = 0;
+            state.horizPos = 0;
+            state.x10Mag = false;
+            state.ch2Inv = false;
+            state.trigSource = 'LINE';
+            state.trigMode = 'AUTO';
+            state.trigLevel = 8.8;
+            state.calSeenAC = false;
+            state.calSeenDC = false;
+            state.genSeenAC = false;
+            state.genSeenDC = false;
+            state.sawCalAcDc = false;
+            state.sawGenAcDc = false;
+
+            hidePanelFeedback();
+
+            if (!silent) {
+                state.stage1Substep = 'CAL';
+                state.scores.stage1Cal = 0;
+                state.scores.stage1Gen = 0;
+                updateScoreUI();
+                saveStateToStorage();
+                showToast("Настройки Этапа 1 сброшены");
+            }
+            syncPanelUI();
+        }
+
+        function resetStage2InputsAndFeedback() {
+            ['inpStage2Chan', 'inpStage2Upp', 'inpStage2Um', 'inpStage2Urms', 'inpStage2Udc', 'inpStage2T', 'inpStage2F'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            ['fbStage2Chan', 'fbStage2Upp', 'fbStage2Um', 'fbStage2Urms', 'fbStage2Udc', 'fbStage2TF'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.innerHTML = '';
+                    el.classList.add('hidden');
+                }
+            });
+            const msgEl = document.getElementById('stage2SummaryMsg');
+            if (msgEl) msgEl.innerHTML = '';
+        }
+
+        function clearStage2FeedbackItem(fbId) {
+            const el = document.getElementById(fbId);
+            if (el) {
+                el.innerHTML = '';
+                el.classList.add('hidden');
+            }
+            const msgEl = document.getElementById('stage2SummaryMsg');
+            if (msgEl) msgEl.innerHTML = '';
+        }
+
+        function resetStage2() {
+            resetStage2InputsAndFeedback();
+            state.scores.stage2 = 0;
+            updateScoreUI();
+            loadStage2Preset();
+            showToast("Поля и настройки Этапа 2 сброшены");
+        }
+
+        function loadStage2Preset() {
+            const vData = VARIANTS[state.variant - 1];
+            const s2 = vData.stage2;
+
+            hidePanelFeedback();
+
+            state.power = true;
+            state.inten = 85;
+            state.focus = 50;
+            state.traceRot = 0;
+            state.probeSource = 'GEN';
+            state.varCalibrated = true;
+            state.vertMode = s2.channel;
+            state.ch1Coupling = 'DC';
+            state.ch2Coupling = 'DC';
+            state.ch1VoltsIdx = s2.channel === 'CH1' ? s2.voltsIdx : 7;
+            state.ch2VoltsIdx = s2.channel === 'CH2' ? s2.voltsIdx : 7;
+            state.timeDivIdx = s2.timeIdx;
+            state.ch1Pos = 0;
+            state.ch2Pos = 0;
+            state.horizPos = 0;
+            state.x10Mag = s2.x10Mag;
+            state.ch2Inv = false;
+            state.trigSource = s2.channel;
+            state.trigMode = 'AUTO';
+            state.trigLevel = 0;
+
+            inputSignals.CH1 = {
+                active: s2.channel === 'CH1',
+                wave: s2.wave,
+                amp: s2.Um,
+                periodMs: s2.T_ms,
+                dc: s2.Udc,
+                phase: 0
+            };
+            inputSignals.CH2 = {
+                active: s2.channel === 'CH2',
+                wave: s2.wave,
+                amp: s2.Um,
+                periodMs: s2.T_ms,
+                dc: s2.Udc,
+                phase: 0
+            };
+
+            document.getElementById('activeTaskBanner').innerHTML = `
+                <div class="flex items-center justify-between gap-1">
+                    <span class="font-bold text-sky-400 text-[11px]">ЭТАП 2 (Вар. №${state.variant}): Сигнал — ${WAVE_NAMES_RU[s2.wave].toLowerCase()} с U<sub>0</sub> (35 б.)</span>
+                    <button onclick="toggleTaskDrawer(false)" class="text-[10px] text-slate-400 hover:text-white px-1">Свернуть ▴</button>
+                </div>
+                <p class="text-slate-300 text-[11px] mt-0.5">
+                    Переключайте вход <b>${s2.channel}</b> между <code>AC</code> и <code>DC</code>, чтобы определить U<sub>0</sub>, а также рассчитайте параметры сигнала.
+                </p>
+            `;
+            syncPanelUI();
+        }
+
+        function selectMission(mIdx) {
+            state.currentMission = mIdx;
+            hidePanelFeedback();
+
+            const b0 = document.getElementById('btnMission0');
+            const b1 = document.getElementById('btnMission1');
+            b0.className = mIdx === 0
+                ? "px-2.5 py-1 rounded-lg text-[11px] font-bold border bg-amber-500 text-slate-950 border-amber-400"
+                : "px-2.5 py-1 rounded-lg text-[11px] font-bold border bg-slate-800 text-slate-300 border-slate-700";
+            b1.className = mIdx === 1
+                ? "px-2.5 py-1 rounded-lg text-[11px] font-bold border bg-amber-500 text-slate-950 border-amber-400"
+                : "px-2.5 py-1 rounded-lg text-[11px] font-bold border bg-slate-800 text-slate-300 border-slate-700";
+
+            document.getElementById('stage3Feedback').innerHTML = '';
+
+            const s3 = VARIANTS[state.variant - 1].stage3;
+
+            if (mIdx === 0) {
+                const m1 = s3.m1;
+                inputSignals.CH1 = {
+                    active: m1.channel === 'CH1',
+                    wave: m1.wave,
+                    amp: m1.amp,
+                    periodMs: m1.periodMs,
+                    dc: m1.dcVolts,
+                    phase: 0
+                };
+                inputSignals.CH2 = {
+                    active: m1.channel === 'CH2',
+                    wave: m1.wave,
+                    amp: m1.amp,
+                    periodMs: m1.periodMs,
+                    dc: m1.dcVolts,
+                    phase: 0
+                };
+
+                state.power = true;
+                state.inten = 80;
+                state.focus = 50;
+                state.traceRot = 0;
+                state.probeSource = 'GEN';
+                state.varCalibrated = true;
+                state.vertMode = (m1.channel === 'CH1') ? 'CH2' : 'CH1';
+                state.ch1VoltsIdx = (m1.voltsIdx + 3) % VOLTS_DIV_STEPS.length;
+                state.ch2VoltsIdx = (m1.voltsIdx + 2) % VOLTS_DIV_STEPS.length;
+                state.ch1Coupling = 'GND';
+                state.ch2Coupling = 'GND';
+                state.ch1Pos = 0;
+                state.ch2Pos = 0;
+                state.horizPos = 0;
+                state.timeDivIdx = (m1.timeIdx + 3) % TIME_DIV_STEPS.length;
+                state.x10Mag = false;
+                state.ch2Inv = false;
+                state.trigSource = 'LINE';
+                state.trigMode = 'AUTO';
+                state.trigLevel = 7.6;
+
+                const descHtml = `
+                    <div class="font-bold text-amber-400">Задача 3.1 (Вариант №${state.variant}): Самостоятельный подбор масштаба (10 б.)</div>
+                    <p>На вход подан <b>${WAVE_NAMES_RU[m1.wave].toLowerCase()} сигнал</b> (размах <b>${m1.Upp} В</b>, период <b>${m1.periodMs} мс</b>) с постоянной составляющей (<b>${m1.dcVolts > 0 ? '+' : ''}${m1.dcVolts} В</b>).</p>
+                    <p class="text-emerald-300"><b>Цель:</b> найдите активный канал, отсеките постоянную составляющую (переключив вход в <b>AC</b>) и настройте масштабы <b>VOLTS/DIV</b> и <b>TIME/DIV</b> так, чтобы размах составлял ровно <b>${m1.targetDivsY} кл.</b>, а на экране укладывалось ровно <b>${m1.periodsOnScreen} полных периода</b>.</p>
+                `;
+                document.getElementById('missionDescriptionBox').innerHTML = descHtml;
+                document.getElementById('activeTaskBanner').innerHTML = `
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="font-bold text-amber-400 text-[11px]">ЗАДАЧА 3.1 (Вар. №${state.variant}): Размах = ${m1.targetDivsY} кл. | На экране = ${m1.periodsOnScreen} пер.</span>
+                        <button onclick="toggleTaskDrawer(false)" class="text-[10px] text-slate-400 hover:text-white px-1">Свернуть ▴</button>
+                    </div>
+                    <p class="text-slate-300 text-[11px] mt-0.5">Найдите канал, уберите постоянную составляющую и подберите VOLTS/DIV и TIME/DIV.</p>
+                `;
+            } else {
+                const m2 = s3.m2;
+                inputSignals.CH1 = { active: true, wave: m2.wave1, amp: m2.amp1, periodMs: m2.periodMs1, dc: 0, phase: 0 };
+                inputSignals.CH2 = { active: true, wave: m2.wave2, amp: m2.amp2, periodMs: m2.periodMs2, dc: 0, phase: 0 };
+
+                state.power = true;
+                state.inten = 85;
+                state.focus = 50;
+                state.traceRot = 0;
+                state.probeSource = 'GEN';
+                state.varCalibrated = true;
+                state.vertMode = 'CH1';
+                state.ch1VoltsIdx = (m2.voltsIdx1 + 2) % VOLTS_DIV_STEPS.length;
+                state.ch2VoltsIdx = (m2.voltsIdx2 + 3) % VOLTS_DIV_STEPS.length;
+                state.ch1Coupling = 'GND';
+                state.ch2Coupling = 'GND';
+                state.ch2Inv = false;
+                state.ch1Pos = 1.5;
+                state.ch2Pos = -1.5;
+                state.timeDivIdx = (m2.timeIdx + 2) % TIME_DIV_STEPS.length;
+                state.x10Mag = false;
+                state.trigSource = 'CH1';
+                state.trigLevel = 0;
+
+                const upp1 = +(m2.amp1 * 2).toFixed(3);
+                const upp2 = +(m2.amp2 * 2).toFixed(3);
+
+                const descHtml = `
+                    <div class="font-bold text-amber-400">Задача 3.2 (Вариант №${state.variant}): Двухканальный режим DUAL (10 б.)</div>
+                    <p>На входы <b>CH1</b> и <b>CH2</b> поданы сигналы (CH1: ${WAVE_NAMES_RU[m2.wave1].toLowerCase()}, Upp=${upp1}В, T=${m2.periodMs1}мс | CH2: ${WAVE_NAMES_RU[m2.wave2].toLowerCase()}, Upp=${upp2}В, T=${m2.periodMs2}мс).</p>
+                    <p class="text-emerald-300"><b>Цель:</b> включите режим <b>DUAL</b>, переведите входы в <b>DC</b> и подберите масштабы так, чтобы размах <b>CH1 составлял ровно ${m2.targetDivsY1} кл.</b>, размах <b>CH2 — ровно ${m2.targetDivsY2} кл.</b>, а на экране укладывалось ровно <b>${m2.periods1} периода CH1 (${m2.periods2} периодов CH2)</b>.</p>
+                `;
+                document.getElementById('missionDescriptionBox').innerHTML = descHtml;
+                document.getElementById('activeTaskBanner').innerHTML = `
+                    <div class="flex items-center justify-between gap-1">
+                        <span class="font-bold text-amber-400 text-[11px]">ЗАДАЧА 3.2 (Вар. №${state.variant}): CH1 = ${m2.targetDivsY1} кл. (${m2.periods1} пер.) | CH2 = ${m2.targetDivsY2} кл. (${m2.periods2} пер.)</span>
+                        <button onclick="toggleTaskDrawer(false)" class="text-[10px] text-slate-400 hover:text-white px-1">Свернуть ▴</button>
+                    </div>
+                    <p class="text-slate-300 text-[11px] mt-0.5">Включите режим DUAL и настройте оба канала и развёртку TIME/DIV.</p>
+                `;
+            }
+
+            syncPanelUI();
+        }
+
+        function resetCurrentMission() {
+            if (state.currentMission === 0) {
+                state.scores.stage3m0 = 0;
+                state.stage3Attempts[0] = 0;
+            } else {
+                state.scores.stage3m1 = 0;
+                state.stage3Attempts[1] = 0;
+            }
+            updateScoreUI();
+            selectMission(state.currentMission);
+            showToast(`Задача 3.${state.currentMission + 1} сброшена`);
+        }
+
+        function configureStage4Banner() {
+            document.getElementById('activeTaskBanner').innerHTML = `
+                <div class="flex items-center justify-between gap-1">
+                    <span class="font-bold text-purple-400 text-[11px]">ЭТАП 4: Блиц-тест и итоговый отчёт (15 баллов)</span>
+                    <button onclick="toggleTaskDrawer(false)" class="text-[10px] text-slate-400 hover:text-white px-1">Свернуть ▴</button>
+                </div>
+                <p class="text-slate-300 text-[11px] mt-0.5">Ответьте на 3 вопроса ниже и скопируйте готовый протокол для преподавателя.</p>
+            `;
+        }
+
+        /**************************************************************************
+         * 8. PANEL CONTROLS UPDATER & UI SYNC
+         **************************************************************************/
+        function clearActiveStageFeedbackOnControlChange() {
+            hidePanelFeedback();
+            if (state.currentStage === 3) {
+                const s3fb = document.getElementById('stage3Feedback');
+                if (s3fb) s3fb.innerHTML = '';
+            }
+        }
+
+        function updateStage1CouplingSeenFlags() {
+            if (state.currentStage !== 1) return;
+            const s1 = VARIANTS[state.variant - 1].stage1;
+            const activeCoupling = s1.channel === 'CH1' ? state.ch1Coupling : state.ch2Coupling;
+            if (state.probeSource === 'CAL') {
+                if (activeCoupling === 'AC') state.calSeenAC = true;
+                if (activeCoupling === 'DC') state.calSeenDC = true;
+                if (state.calSeenAC && state.calSeenDC) state.sawCalAcDc = true;
+            } else if (state.probeSource === 'GEN') {
+                if (activeCoupling === 'AC') state.genSeenAC = true;
+                if (activeCoupling === 'DC') state.genSeenDC = true;
+                if (state.genSeenAC && state.genSeenDC) state.sawGenAcDc = true;
+            }
+        }
+
+        function togglePower(forceState) {
+            state.power = (typeof forceState === 'boolean') ? forceState : !state.power;
+            updateStage1CouplingSeenFlags();
+            clearActiveStageFeedbackOnControlChange();
+            syncPanelUI();
+        }
+
+        function updateControl(key, val) {
+            state[key] = val;
+            updateStage1CouplingSeenFlags();
+            clearActiveStageFeedbackOnControlChange();
+            syncPanelUI();
+        }
+
+        function stepVolts(channel, dir) {
+            if (channel === 1) {
+                state.ch1VoltsIdx = Math.max(0, Math.min(VOLTS_DIV_STEPS.length - 1, state.ch1VoltsIdx + dir));
+            } else {
+                state.ch2VoltsIdx = Math.max(0, Math.min(VOLTS_DIV_STEPS.length - 1, state.ch2VoltsIdx + dir));
+            }
+            clearActiveStageFeedbackOnControlChange();
+            syncPanelUI();
+        }
+
+        function stepTime(dir) {
+            state.timeDivIdx = Math.max(0, Math.min(TIME_DIV_STEPS.length - 1, state.timeDivIdx + dir));
+            clearActiveStageFeedbackOnControlChange();
+            syncPanelUI();
+        }
+
+        function syncPanelUI() {
+            document.getElementById('powerOffOverlay').classList.toggle('hidden', state.power);
+            const led = document.getElementById('powerLed');
+            led.className = state.power
+                ? "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_6px_#10b981] inline-block"
+                : "w-2.5 h-2.5 rounded-full bg-slate-600 inline-block";
+
+            document.getElementById('rngInten').value = state.inten;
+            document.getElementById('valInten').textContent = `${state.inten}%`;
+
+            document.getElementById('rngFocus').value = state.focus;
+            const focusDiff = Math.abs(state.focus - 50);
+            document.getElementById('valFocus').textContent = focusDiff <= 15 ? `${state.focus} (ОК)` : `${state.focus} (Размыто)`;
+
+            const btnProbeCAL = document.getElementById('btnProbeCAL');
+            const btnProbeGEN = document.getElementById('btnProbeGEN');
+            if (btnProbeCAL && btnProbeGEN) {
+                btnProbeCAL.className = state.probeSource === 'CAL'
+                    ? "px-2 py-0.5 rounded-lg text-[10px] font-mono-tech font-bold border bg-amber-500 text-slate-950 border-amber-600 shadow"
+                    : "px-2 py-0.5 rounded-lg text-[10px] font-mono-tech font-bold border bg-slate-300 text-slate-700 border-slate-400";
+                btnProbeGEN.className = state.probeSource === 'GEN'
+                    ? "px-2 py-0.5 rounded-lg text-[10px] font-mono-tech font-bold border bg-emerald-600 text-white border-emerald-700 shadow"
+                    : "px-2 py-0.5 rounded-lg text-[10px] font-mono-tech font-bold border bg-slate-300 text-slate-700 border-slate-400";
+            }
+
+            const crtProbeBadge = document.getElementById('crtProbeBadge');
+            if (crtProbeBadge) {
+                crtProbeBadge.textContent = state.probeSource === 'CAL' ? '⚡ CAL 2V' : '🔌 ГЕН';
+                crtProbeBadge.className = state.probeSource === 'CAL'
+                    ? "px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-600/60 font-bold"
+                    : "px-1.5 py-0.5 rounded bg-slate-800 text-emerald-300 border border-slate-700 font-bold";
+            }
+
+            const ledUncal = document.getElementById('ledUncal');
+            const btnVarCal = document.getElementById('btnVarCal');
+            const crtUncalBadge = document.getElementById('crtUncalBadge');
+            if (ledUncal && btnVarCal) {
+                ledUncal.className = state.varCalibrated
+                    ? "w-2 h-2 rounded-full bg-slate-400 inline-block"
+                    : "w-2 h-2 rounded-full bg-rose-600 shadow-[0_0_6px_#e11d48] inline-block animate-pulse";
+                btnVarCal.textContent = state.varCalibrated ? 'CAL ✓' : 'UNCAL ✕';
+                btnVarCal.className = state.varCalibrated
+                    ? "px-1.5 py-0.2 rounded text-[10px] font-mono-tech font-bold bg-slate-900 text-emerald-400 shadow transition"
+                    : "px-1.5 py-0.2 rounded text-[10px] font-mono-tech font-bold bg-rose-600 text-white shadow transition";
+            }
+            if (crtUncalBadge) {
+                crtUncalBadge.classList.toggle('hidden', state.varCalibrated);
+            }
+
+            const rngTraceRot = document.getElementById('rngTraceRot');
+            const lblTraceRot = document.getElementById('lblTraceRot');
+            if (rngTraceRot && lblTraceRot) {
+                rngTraceRot.value = state.traceRot;
+                lblTraceRot.textContent = `${state.traceRot > 0 ? '+' : ''}${state.traceRot.toFixed(1)}°`;
+            }
+
+            ['CH1', 'CH2', 'DUAL', 'ADD'].forEach(m => {
+                const btn = document.getElementById(`btnMode${m}`);
+                btn.className = (state.vertMode === m)
+                    ? "vmode-btn px-2 py-0.5 rounded text-[11px] font-mono-tech font-bold bg-slate-900 text-emerald-400 shadow"
+                    : "vmode-btn px-2 py-0.5 rounded text-[11px] font-mono-tech font-bold text-slate-700 hover:bg-slate-200";
+            });
+
+            const v1 = VOLTS_DIV_STEPS[state.ch1VoltsIdx];
+            const v2 = VOLTS_DIV_STEPS[state.ch2VoltsIdx];
+            document.getElementById('lblCh1Volts').textContent = v1.label;
+            document.getElementById('lblCh2Volts').textContent = v2.label;
+
+            const angle1 = -130 + (state.ch1VoltsIdx / (VOLTS_DIV_STEPS.length - 1)) * 260;
+            const angle2 = -130 + (state.ch2VoltsIdx / (VOLTS_DIV_STEPS.length - 1)) * 260;
+            document.getElementById('dialCh1Volts').style.transform = `rotate(${angle1}deg)`;
+            document.getElementById('dialCh2Volts').style.transform = `rotate(${angle2}deg)`;
+
+            VOLTS_DIV_STEPS.forEach((_, idx) => {
+                const t1 = document.getElementById(`tickCh1V_${idx}`);
+                if (t1) t1.classList.toggle('active-tick-ch1', idx === state.ch1VoltsIdx);
+                const t2 = document.getElementById(`tickCh2V_${idx}`);
+                if (t2) t2.classList.toggle('active-tick-ch2', idx === state.ch2VoltsIdx);
+            });
+
+            ['AC', 'GND', 'DC'].forEach(c => {
+                const b1 = document.getElementById(`btnCh1${c}`);
+                b1.className = (state.ch1Coupling === c)
+                    ? "py-0.5 rounded text-[10px] font-mono-tech font-bold bg-slate-900 text-emerald-400 shadow"
+                    : "py-0.5 rounded text-[10px] font-mono-tech font-bold text-slate-700 hover:bg-slate-200";
+
+                const b2 = document.getElementById(`btnCh2${c}`);
+                b2.className = (state.ch2Coupling === c)
+                    ? "py-0.5 rounded text-[10px] font-mono-tech font-bold bg-slate-900 text-sky-400 shadow"
+                    : "py-0.5 rounded text-[10px] font-mono-tech font-bold text-slate-700 hover:bg-slate-200";
+            });
+
+            document.getElementById('rngCh1Pos').value = state.ch1Pos;
+            document.getElementById('rngCh2Pos').value = state.ch2Pos;
+            document.getElementById('rngHorizPos').value = state.horizPos;
+
+            const invBtn = document.getElementById('btnCh2Inv');
+            invBtn.className = state.ch2Inv
+                ? "px-1.5 py-0.2 rounded text-[9px] font-mono-tech font-bold border bg-rose-600 text-white border-rose-700 shadow-inner"
+                : "px-1.5 py-0.2 rounded text-[9px] font-mono-tech font-bold border bg-slate-300 text-slate-700 border-slate-400";
+
+            const tStep = TIME_DIV_STEPS[state.timeDivIdx];
+            document.getElementById('lblTimeDiv').textContent = tStep.label;
+            const angleT = -130 + (state.timeDivIdx / (TIME_DIV_STEPS.length - 1)) * 260;
+            document.getElementById('dialTimeDiv').style.transform = `rotate(${angleT}deg)`;
+
+            TIME_DIV_STEPS.forEach((_, idx) => {
+                const tt = document.getElementById(`tickTime_${idx}`);
+                if (tt) tt.classList.toggle('active-tick-time', idx === state.timeDivIdx);
+            });
+
+            const magBtn = document.getElementById('btnX10Mag');
+            magBtn.className = state.x10Mag
+                ? "px-2 py-0.5 rounded text-[10px] font-mono-tech font-bold border bg-amber-500 text-slate-950 border-amber-600 shadow"
+                : "px-2 py-0.5 rounded text-[10px] font-mono-tech font-bold border bg-slate-300 text-slate-700 border-slate-400";
+
+            ['CH1', 'CH2', 'LINE'].forEach(src => {
+                const b = document.getElementById(`btnTrig${src}`);
+                b.className = (state.trigSource === src)
+                    ? "py-0.5 rounded text-[10px] font-mono-tech font-bold bg-slate-900 text-amber-400 shadow"
+                    : "py-0.5 rounded text-[10px] font-mono-tech font-bold text-slate-700 hover:bg-slate-200";
+            });
+
+            ['AUTO', 'NORM'].forEach(tm => {
+                const b = document.getElementById(`btnTrig${tm}`);
+                b.className = (state.trigMode === tm)
+                    ? "py-0.5 rounded text-[10px] font-mono-tech font-bold bg-slate-900 text-amber-400 shadow"
+                    : "py-0.5 rounded text-[10px] font-mono-tech font-bold text-slate-700 hover:bg-slate-200";
+            });
+
+            document.getElementById('btnTrigSlope').textContent = state.trigSlope === '+' ? 'SLOPE: +' : 'SLOPE: −';
+            document.getElementById('rngTrigLevel').value = state.trigLevel;
+            document.getElementById('lblTrigLevel').textContent = `${state.trigLevel > 0 ? '+' : ''}${state.trigLevel.toFixed(1)}`;
+
+            document.getElementById('hudMode').textContent = state.vertMode;
+            document.getElementById('hudCh1').textContent = `${v1.label}/${state.ch1Coupling}`;
+            document.getElementById('hudCh2').textContent = `${v2.label}/${state.ch2Coupling}${state.ch2Inv ? '/I' : ''}`;
+            document.getElementById('hudTime').textContent = `${tStep.label}${state.x10Mag ? '×10' : ''}`;
+
+            if (state.currentStage === 1) {
+                renderStage1Banner();
+            }
+        }
+
+        /**************************************************************************
+         * 9. REAL-TIME CRT OSCILLOSCOPE CANVAS ENGINE
+         **************************************************************************/
+        let animPhase = 0;
+        let lastBadgeStatus = '';
+
+        function evaluateWaveSample(waveType, phaseRad) {
+            const p = ((phaseRad % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+            if (waveType === 'sine') return Math.sin(p);
+            if (waveType === 'square') return p < Math.PI ? 1 : -1;
+            if (waveType === 'triangle') {
+                return (2 / Math.PI) * Math.asin(Math.sin(p));
+            }
+            return 0;
+        }
+
+        function isSignalTriggered() {
+            try {
+                if (state.trigSource === 'LINE') {
+                    const activeCh = state.vertMode === 'CH2' ? 2 : 1;
+                    const sig = getActiveSignalForChannel(activeCh);
+                    if (!sig || !sig.active) return false;
+                    return Math.abs((20.0 / sig.periodMs) - Math.round(20.0 / sig.periodMs)) < 0.02;
+                }
+                const isCh1 = state.trigSource === 'CH1';
+                const srcSig = getActiveSignalForChannel(isCh1 ? 1 : 2);
+                if (!srcSig || !srcSig.active) return false;
+                const coupling = isCh1 ? state.ch1Coupling : state.ch2Coupling;
+                if (coupling === 'GND') return false;
+
+                const voltsDiv = VOLTS_DIV_STEPS[isCh1 ? state.ch1VoltsIdx : state.ch2VoltsIdx].val;
+                const varGain = state.varCalibrated ? 1.0 : CONST.UNCAL_GAIN;
+                const ampDivs = (srcSig.amp * varGain) / voltsDiv;
+                if (ampDivs < CONST.MIN_TRIG_DIVS) return false;
+
+                const trigThresholdDivs = (state.trigLevel / 10) * 4.0;
+                const maxCapturableDivs = Math.min(4.5, Math.max(1.2, ampDivs * 1.15));
+                return Math.abs(trigThresholdDivs) <= maxCapturableDivs;
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function getActiveSignalForChannel(chNum) {
+            const isCh1 = chNum === 1;
+            const genSig = isCh1 ? inputSignals.CH1 : inputSignals.CH2;
+            if (state.probeSource === 'CAL') {
+                return CAL_SIGNAL;
+            }
+            return genSig;
+        }
+
+        function setCrtStatusBadgeState(statusKey) {
+            if (lastBadgeStatus === statusKey) return;
+            lastBadgeStatus = statusKey;
+            const badge = document.getElementById('crtStatusBadge');
+            if (!badge) return;
+            if (statusKey === 'OFF') {
+                badge.textContent = "OFF";
+                badge.className = "px-1.5 py-0.5 rounded bg-slate-900 text-slate-500 border border-slate-700 font-bold";
+            } else if (statusKey === 'TRIGD') {
+                badge.textContent = "TRIG'D";
+                badge.className = "px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-700/50 font-bold";
+            } else {
+                badge.textContent = "БЕЖИТ";
+                badge.className = "px-1.5 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-700/50 font-bold";
+            }
+        }
+
+        function renderCRTLoop() {
+            const canvas = document.getElementById('crtCanvas');
+            if (canvas) {
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                if (canvas.width !== Math.floor(rect.width * dpr) || canvas.height !== Math.floor(rect.height * dpr)) {
+                    canvas.width = Math.floor(rect.width * dpr);
+                    canvas.height = Math.floor(rect.height * dpr);
+                }
+
+                const ctx = canvas.getContext('2d');
+                ctx.save();
+                ctx.scale(dpr, dpr);
+                const W = rect.width;
+                const H = rect.height;
+
+                ctx.fillStyle = '#072112';
+                ctx.fillRect(0, 0, W, H);
+
+                drawGraticule(ctx, W, H);
+
+                if (state.power) {
+                    const locked = isSignalTriggered();
+                    if (locked) {
+                        setCrtStatusBadgeState('TRIGD');
+                    } else {
+                        setCrtStatusBadgeState('UNSTABLE');
+                        animPhase += 0.17;
+                    }
+
+                    const shouldDrawTrace = !(state.trigMode === 'NORM' && !locked && state.trigSource !== 'LINE');
+
+                    if (shouldDrawTrace) {
+                        if (state.vertMode === 'CH1') {
+                            drawChannelTrace(ctx, W, H, 1, locked, '#39ff88');
+                        } else if (state.vertMode === 'CH2') {
+                            drawChannelTrace(ctx, W, H, 2, locked, '#39ff88');
+                        } else if (state.vertMode === 'DUAL') {
+                            drawChannelTrace(ctx, W, H, 1, locked, '#39ff88');
+                            drawChannelTrace(ctx, W, H, 2, locked, '#5eead4');
+                        } else if (state.vertMode === 'ADD') {
+                            drawAddTrace(ctx, W, H, locked, '#39ff88');
+                        }
+                    }
+                } else {
+                    setCrtStatusBadgeState('OFF');
+                }
+
+                if (state.showCursor && state.power) {
+                    drawMeasurementCursor(ctx, W, H);
+                }
+
+                ctx.restore();
+            }
+            requestAnimationFrame(renderCRTLoop);
+        }
+
+        function drawGraticule(ctx, W, H) {
+            const divX = W / CONST.GRID_COLS;
+            const divY = H / CONST.GRID_ROWS;
+
+            ctx.strokeStyle = '#155e37';
+            ctx.lineWidth = 1;
+
+            for (let i = 1; i < CONST.GRID_COLS; i++) {
+                const x = i * divX;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, H);
+                ctx.stroke();
+            }
+            for (let j = 1; j < CONST.GRID_ROWS; j++) {
+                const y = j * divY;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(W, y);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = '#1f844d';
+            ctx.lineWidth = 1.25;
+            const midX = W / 2;
+            const midY = H / 2;
+
+            ctx.beginPath();
+            ctx.moveTo(midX, 0);
+            ctx.lineTo(midX, H);
+            ctx.moveTo(0, midY);
+            ctx.lineTo(W, midY);
+            ctx.stroke();
+
+            ctx.lineWidth = 1;
+            ctx.lineCap = 'round';
+            const tickLen = 2.5;
+            for (let i = 0; i <= 50; i++) {
+                if (i % 5 === 0) continue;
+                const tx = (i / 50) * W;
+                ctx.beginPath();
+                ctx.moveTo(tx, midY - tickLen);
+                ctx.lineTo(tx, midY + tickLen);
+                ctx.stroke();
+            }
+            for (let j = 0; j <= 40; j++) {
+                if (j % 5 === 0) continue;
+                const ty = (j / 40) * H;
+                ctx.beginPath();
+                ctx.moveTo(midX - tickLen, ty);
+                ctx.lineTo(midX + tickLen, ty);
+                ctx.stroke();
+            }
+        }
+
+        function getChannelDeflectionDivs(chNum, timeMsFromLeft, xDivFromCenter = 0) {
+            const isCh1 = chNum === 1;
+            const sig = getActiveSignalForChannel(chNum);
+            const coupling = isCh1 ? state.ch1Coupling : state.ch2Coupling;
+            const voltsDiv = VOLTS_DIV_STEPS[isCh1 ? state.ch1VoltsIdx : state.ch2VoltsIdx].val;
+            const posDiv = isCh1 ? state.ch1Pos : state.ch2Pos;
+            const rotOffsetDivs = xDivFromCenter * Math.tan((state.traceRot * Math.PI) / 180) * CONST.TRACE_ROT_FACTOR;
+
+            if (coupling === 'GND' || !sig.active) {
+                return posDiv + rotOffsetDivs;
+            }
+
+            const phaseOffset = (state.trigSlope === '-') ? Math.PI : 0;
+            const levelPhaseShift = (state.trigLevel / 10) * CONST.TRIG_PHASE_SHIFT;
+            const omega = (2 * Math.PI) / sig.periodMs;
+            const rawWave = evaluateWaveSample(sig.wave, omega * timeMsFromLeft + phaseOffset + levelPhaseShift);
+            const varGain = state.varCalibrated ? 1.0 : CONST.UNCAL_GAIN;
+
+            let voltage = rawWave * sig.amp;
+            if (coupling === 'DC') {
+                voltage += (sig.dc || 0);
+            }
+            voltage *= varGain;
+
+            if (!isCh1 && state.ch2Inv) {
+                voltage = -voltage;
+            }
+
+            return posDiv + (voltage / voltsDiv) + rotOffsetDivs;
+        }
+
+        function applyBeamStyle(ctx, colorHex) {
+            const alpha = Math.max(0.2, state.inten / 100);
+            const focusBlur = Math.abs(state.focus - 50) * 0.25;
+            ctx.strokeStyle = colorHex;
+            ctx.globalAlpha = alpha;
+            ctx.lineWidth = 2.0 + (focusBlur * 0.16);
+            ctx.shadowColor = colorHex;
+            ctx.shadowBlur = 3.5 + focusBlur * 1.4;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+        }
+
+        function drawChannelTrace(ctx, W, H, chNum, locked, colorHex) {
+            const divX = W / 10;
+            const divY = H / 8;
+            const midY = H / 2;
+
+            const baseTimeDiv = TIME_DIV_STEPS[state.timeDivIdx].val;
+            const effectiveTimeDiv = state.x10Mag ? (baseTimeDiv / 10) : baseTimeDiv;
+
+            const posDiv = chNum === 1 ? state.ch1Pos : state.ch2Pos;
+            const zeroY = midY - posDiv * divY;
+            ctx.save();
+            ctx.fillStyle = colorHex;
+            ctx.font = 'bold 9px JetBrains Mono, monospace';
+            ctx.globalAlpha = 0.75;
+            ctx.fillText(`${chNum === 1 ? '1' : '2'}▸0V`, 3, Math.max(10, Math.min(H - 4, zeroY + 3)));
+            ctx.restore();
+
+            ctx.save();
+            applyBeamStyle(ctx, colorHex);
+            ctx.beginPath();
+
+            const samples = 380;
+            for (let s = 0; s <= samples; s++) {
+                const px = (s / samples) * W;
+                const xDivFromCenter = ((px / divX) - 5) - state.horizPos;
+                const timeMs = xDivFromCenter * effectiveTimeDiv + (locked ? 0 : animPhase * effectiveTimeDiv);
+
+                const yDivs = getChannelDeflectionDivs(chNum, timeMs, (px / divX) - 5);
+                const py = midY - yDivs * divY;
+
+                if (s === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawAddTrace(ctx, W, H, locked, colorHex) {
+            const divX = W / 10;
+            const divY = H / 8;
+            const midY = H / 2;
+
+            const baseTimeDiv = TIME_DIV_STEPS[state.timeDivIdx].val;
+            const effectiveTimeDiv = state.x10Mag ? (baseTimeDiv / 10) : baseTimeDiv;
+
+            ctx.save();
+            applyBeamStyle(ctx, colorHex);
+            ctx.beginPath();
+
+            const samples = 380;
+            for (let s = 0; s <= samples; s++) {
+                const px = (s / samples) * W;
+                const xDivFromCenter = ((px / divX) - 5) - state.horizPos;
+                const timeMs = xDivFromCenter * effectiveTimeDiv + (locked ? 0 : animPhase * effectiveTimeDiv);
+
+                const xScreenDiv = (px / divX) - 5;
+                const rotOffsetDivs = xScreenDiv * Math.tan((state.traceRot * Math.PI) / 180) * CONST.TRACE_ROT_FACTOR;
+                const yDivs = getChannelDeflectionDivs(1, timeMs, 0) + getChannelDeflectionDivs(2, timeMs, 0) + rotOffsetDivs;
+                const py = midY - yDivs * divY;
+
+                if (s === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        function drawMeasurementCursor(ctx, W, H) {
+            const divX = W / 10;
+            const divY = H / 8;
+            const cx = (5 + state.cursorX) * divX;
+            const cy = (4 - state.cursorY) * divY;
+
+            ctx.save();
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1.2;
+            ctx.setLineDash([4, 4]);
+
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(cx, H);
+            ctx.moveTo(0, cy);
+            ctx.lineTo(W, cy);
+            ctx.stroke();
+
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#0284c7';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 5.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            const baseTimeDiv = TIME_DIV_STEPS[state.timeDivIdx].val;
+            const effTimeDiv = state.x10Mag ? (baseTimeDiv / 10) : baseTimeDiv;
+            const activeCh = state.vertMode === 'CH2' ? 2 : 1;
+            const voltsDiv = VOLTS_DIV_STEPS[activeCh === 1 ? state.ch1VoltsIdx : state.ch2VoltsIdx].val;
+            const varGain = state.varCalibrated ? 1.0 : CONST.UNCAL_GAIN;
+            const tValMs = state.cursorX * effTimeDiv;
+            const uValV = (state.cursorY * voltsDiv) / varGain;
+
+            ctx.fillStyle = 'rgba(2, 6, 23, 0.90)';
+            ctx.fillRect(5, 5, 226, 20);
+            ctx.strokeStyle = '#38bdf8';
+            ctx.strokeRect(5, 5, 226, 20);
+            ctx.fillStyle = '#7dd3fc';
+            ctx.font = 'bold 9.5px JetBrains Mono, monospace';
+            ctx.fillText(`X:${state.cursorX >= 0 ? '+' : ''}${state.cursorX.toFixed(1)}дел(${tValMs >= 0 ? '+' : ''}${tValMs.toFixed(2)}мс) Y:${state.cursorY >= 0 ? '+' : ''}${state.cursorY.toFixed(1)}дел(${uValV >= 0 ? '+' : ''}${uValV.toFixed(2)}В)`, 9, 18);
+            ctx.restore();
+        }
+
+        function setupCanvasCursorDrag() {
+            const canvas = document.getElementById('crtCanvas');
+            let dragging = false;
+
+            const moveHandler = (clientX, clientY) => {
+                if (!state.showCursor) return;
+                const rect = canvas.getBoundingClientRect();
+                const relX = (clientX - rect.left) / rect.width;
+                const relY = (clientY - rect.top) / rect.height;
+                state.cursorX = Math.max(-5, Math.min(5, (relX * 10) - 5));
+                state.cursorY = Math.max(-4, Math.min(4, 4 - (relY * 8)));
+            };
+
+            canvas.addEventListener('pointerdown', (e) => {
+                if (!state.showCursor) return;
+                dragging = true;
+                moveHandler(e.clientX, e.clientY);
+            });
+            window.addEventListener('pointermove', (e) => {
+                if (dragging) moveHandler(e.clientX, e.clientY);
+            });
+            window.addEventListener('pointerup', () => { dragging = false; });
+        }
+
+        /**************************************************************************
+         * 10. STAGE VERIFICATION LOGIC WITH SMART TOLERANCE
+         **************************************************************************/
+        function hidePanelFeedback() {
+            const box = document.getElementById('panelCheckFeedback');
+            if (box) {
+                box.classList.add('hidden');
+                box.innerHTML = '';
+            }
+        }
+
+        function showPanelFeedback(isSuccess, htmlText) {
+            const box = document.getElementById('panelCheckFeedback');
+            box.classList.remove('hidden');
+            box.className = isSuccess
+                ? "rounded-xl p-2.5 text-xs font-medium border bg-emerald-950/90 text-emerald-200 border-emerald-500 flex items-start justify-between gap-2"
+                : "rounded-xl p-2.5 text-xs font-medium border bg-rose-950/90 text-rose-200 border-rose-500 flex items-start justify-between gap-2";
+            box.innerHTML = `
+                <div class="leading-snug flex-1">${htmlText}</div>
+                <button onclick="hidePanelFeedback()" class="text-slate-300 hover:text-white font-bold px-1.5 py-0.5 rounded bg-black/20 hover:bg-black/40 transition shrink-0" title="Скрыть сообщение">✕</button>
+            `;
+        }
+
+        function verifyStage1() {
+            const s1 = VARIANTS[state.variant - 1].stage1;
+
+            if (state.stage1Substep === 'CAL') {
+                const errors = [];
+                let calPts = 0;
+
+                if (!state.power) errors.push("Включите <b>POWER</b>.");
+                if (state.probeSource === 'CAL') calPts += 2;
+                else errors.push("Переключите щуп входа на <b>⚡ Клемма CAL (2Vp-p, 1kHz)</b>.");
+
+                if (state.vertMode === s1.channel || state.vertMode === 'DUAL') calPts += 2;
+                else errors.push(`Установите <b>MODE</b> в <b>${s1.channel}</b>.`);
+
+                const activeCoupling = s1.channel === 'CH1' ? state.ch1Coupling : state.ch2Coupling;
+                if ((activeCoupling === 'DC' || activeCoupling === 'AC') && state.sawCalAcDc) calPts += 1;
+                else errors.push(`Переключите вход <b>${s1.channel}</b> между <b>AC и DC</b>.`);
+
+                const activeVoltsIdx = s1.channel === 'CH1' ? state.ch1VoltsIdx : state.ch2VoltsIdx;
+                if (activeVoltsIdx === 6 && state.timeDivIdx === 2 && !state.x10Mag) calPts += 2;
+                else errors.push(`Установите <b>${s1.channel} VOLTS/DIV = 0.5 V</b> и <b>TIME/DIV = 0.2 ms</b>.`);
+
+                if (state.varCalibrated) calPts += 2;
+                else errors.push(`Защёлкните калибровку усиления <b>VAR: CAL ✓</b>.`);
+
+                if (Math.abs(state.traceRot) <= 0.2 && Math.abs(state.focus - 50) <= 15) calPts += 1;
+                else errors.push(`Выровняйте наклон луча <b>TRACE ROT = 0.0°</b> и <b>FOCUS</b> (~50).`);
+
+                state.scores.stage1Cal = Math.max(state.scores.stage1Cal, calPts);
+                updateScoreUI();
+                saveStateToStorage();
+
+                if (errors.length === 0) {
+                    state.stage1Substep = 'GEN';
+                    renderStage1Banner();
+                    showPanelFeedback(true, `✅ <b>Шаг 1А выполнен (10/10 б.)!</b> Перейдите к <b>Шагу 1Б (Сигнал варианта №${state.variant})</b>.`);
+                    showToast("Калибровка выполнена (+10 б.)!");
+                } else {
+                    showPanelFeedback(false, `⚠️ <b>Калибровка (Шаг 1А): ${calPts}/10 б.</b> Исправьте: ${errors.join(' • ')}`);
+                }
+                return;
+            }
+
+            const errors = [];
+            let genPts = 0;
+
+            if (!state.power) errors.push("Включите кнопку <b>POWER</b>.");
+            if (state.probeSource === 'GEN') genPts += 2;
+            else errors.push("Переключите щуп входа на <b>🔌 ГЕНЕРАТОР</b>.");
+
+            if (state.vertMode === s1.channel || state.vertMode === 'DUAL') genPts += 3;
+            else errors.push(`Режим <b>MODE</b> должен быть <b>${s1.channel}</b>.`);
+
+            const activeCoupling = s1.channel === 'CH1' ? state.ch1Coupling : state.ch2Coupling;
+            if (activeCoupling === s1.coupling && state.sawGenAcDc) genPts += 3;
+            else errors.push(`Переключите вход <b>${s1.channel}</b> между <b>AC и DC</b> и оставьте в положении <b>${s1.coupling}</b>.`);
+
+            const activeVoltsIdx = s1.channel === 'CH1' ? state.ch1VoltsIdx : state.ch2VoltsIdx;
+            if (activeVoltsIdx === s1.voltsIdx && state.varCalibrated) genPts += 4;
+            else errors.push(`Установите <b>${s1.channel} VOLTS/DIV = ${VOLTS_DIV_STEPS[s1.voltsIdx].label}</b> и <b>VAR: CAL ✓</b>.`);
+
+            if (state.timeDivIdx === s1.timeIdx && !state.x10Mag) genPts += 4;
+            else errors.push(`Установите <b>TIME/DIV = ${TIME_DIV_STEPS[s1.timeIdx].label}</b> (без x10 MAG).`);
+
+            if (state.trigSource === s1.channel && isSignalTriggered() && Math.abs(state.focus - 50) <= 15 && Math.abs(state.traceRot) <= 0.2) genPts += 4;
+            else errors.push(`Настройте синхронизацию: <b>TRIG SOURCE = ${s1.channel}</b>, ручку <b>LEVEL</b> и <b>FOCUS</b>.`);
+
+            state.scores.stage1Gen = Math.max(state.scores.stage1Gen, genPts);
+            updateScoreUI();
+            saveStateToStorage();
+
+            if (errors.length === 0) {
+                const totalS1 = getStage1Total();
+                showPanelFeedback(true, `🎉 <b>Шаг 1Б выполнен (${genPts}/20 б., всего за Этап 1: ${totalS1}/30 б.)!</b> Переходите ко <b>2 этапу (Измерения)</b>.`);
+                showToast(`Шаг 1Б: ${genPts}/20 баллов!`);
+            } else {
+                showPanelFeedback(false, `⚠️ <b>Шаг 1Б: набрано ${genPts}/20 б.</b> Исправьте: ${errors.join(' • ')}`);
+            }
+        }
+
+        function verifyStage2() {
+            const s2 = VARIANTS[state.variant - 1].stage2;
+            let pts = 0;
+
+            const setFb = (id, ok, msg) => {
+                const el = document.getElementById(id);
+                el.classList.remove('hidden');
+                el.className = `text-[10px] mt-0.5 font-mono-tech ${ok ? 'text-emerald-400' : 'text-rose-400'}`;
+                el.innerHTML = msg;
+            };
+
+            const ansChan = document.getElementById('inpStage2Chan').value;
+            if (ansChan === s2.channel) {
+                pts += 5;
+                setFb('fbStage2Chan', true, `✓ Верно (${s2.channel})`);
+            } else {
+                setFb('fbStage2Chan', false, `✗ Смотрите на MODE`);
+            }
+
+            const closeEnough = (val, target) => {
+                if (isNaN(val)) return false;
+                if (target === 0) return Math.abs(val) <= 0.05;
+                return Math.abs(val - target) <= Math.max(0.03, Math.abs(target) * 0.08); // 8% tolerance for smooth student measurements
+            };
+
+            const ansUpp = parseFloat(document.getElementById('inpStage2Upp').value);
+            if (closeEnough(ansUpp, s2.Upp)) {
+                pts += 6;
+                setFb('fbStage2Upp', true, `✓ Верно (${s2.Upp} В)`);
+            } else {
+                setFb('fbStage2Upp', false, `✗ Размах ${s2.divsY} дел.`);
+            }
+
+            const ansUm = parseFloat(document.getElementById('inpStage2Um').value);
+            if (closeEnough(ansUm, s2.Um)) {
+                pts += 6;
+                setFb('fbStage2Um', true, `✓ Верно (${s2.Um} В)`);
+            } else {
+                setFb('fbStage2Um', false, `✗ Um = Upp / 2`);
+            }
+
+            const ansUrms = parseFloat(document.getElementById('inpStage2Urms').value);
+            if (closeEnough(ansUrms, s2.Urms)) {
+                pts += 6;
+                setFb('fbStage2Urms', true, `✓ Верно (${s2.Urms.toFixed(2)} В)`);
+            } else {
+                setFb('fbStage2Urms', false, `✗ Форма: ${WAVE_NAMES_RU[s2.wave]}`);
+            }
+
+            const ansUdc = parseFloat(document.getElementById('inpStage2Udc').value);
+            if (closeEnough(ansUdc, s2.Udc)) {
+                pts += 6;
+                setFb('fbStage2Udc', true, `✓ Верно (${s2.Udc > 0 ? '+' : ''}${s2.Udc} В)`);
+            } else {
+                const signStr = s2.dcDivs > 0 ? '+' : '';
+                setFb('fbStage2Udc', false, `✗ Смещение DC: ${signStr}${s2.dcDivs} кл.`);
+            }
+
+            const ansT = parseFloat(document.getElementById('inpStage2T').value);
+            const ansF = parseFloat(document.getElementById('inpStage2F').value);
+            const tOk = closeEnough(ansT, s2.T_ms);
+            const fOk = closeEnough(ansF, s2.f_Hz);
+
+            if (tOk && fOk) {
+                pts += 6;
+                setFb('fbStage2TF', true, `✓ T=${s2.T_ms}мс, f=${s2.f_Hz}Гц`);
+            } else if (tOk || fOk) {
+                pts += 3;
+                setFb('fbStage2TF', false, `Частично верно`);
+            } else {
+                setFb('fbStage2TF', false, `✗ 1 пер. = ${s2.divsX} дел.${s2.x10Mag ? ' (x10!)' : ''}`);
+            }
+
+            state.scores.stage2 = Math.max(state.scores.stage2, pts);
+            updateScoreUI();
+            saveStateToStorage();
+
+            const msgEl = document.getElementById('stage2SummaryMsg');
+            if (pts === 35) {
+                msgEl.innerHTML = `<span class="text-emerald-400 font-bold">🎉 Все параметры верны (35/35 б.)! Переходите к Этапу 3.</span>`;
+                showToast("Этап 2: 35/35 баллов!");
+            } else {
+                msgEl.innerHTML = `<span class="text-amber-300">Набрано ${pts} из 35 баллов.</span>`;
+            }
+        }
+
+        function verifyStage3Mission() {
+            const fb = document.getElementById('stage3Feedback');
+            const s3 = VARIANTS[state.variant - 1].stage3;
+
+            if (state.currentMission === 0) {
+                const m1 = s3.m1;
+                const activeVoltsIdx = m1.channel === 'CH1' ? state.ch1VoltsIdx : state.ch2VoltsIdx;
+                const activeCoupling = m1.channel === 'CH1' ? state.ch1Coupling : state.ch2Coupling;
+
+                const powerOk = state.power;
+                const probeOk = state.probeSource === 'GEN';
+                const chanOk = state.vertMode === m1.channel || state.vertMode === 'DUAL';
+                const coupOk = activeCoupling === 'AC';
+                const voltsOk = activeVoltsIdx === m1.voltsIdx && state.varCalibrated;
+                const timeOk = state.timeDivIdx === m1.timeIdx && !state.x10Mag;
+                const trigOk = state.trigSource === m1.channel && isSignalTriggered();
+
+                const passed = powerOk && probeOk && chanOk && coupOk && voltsOk && timeOk && trigOk;
+
+                if (passed) {
+                    state.scores.stage3m0 = 10;
+                    updateScoreUI();
+                    saveStateToStorage();
+                    fb.innerHTML = `<span class="text-emerald-400 font-bold">✅ Задача 3.1 решена (+10 б.)! Масштаб и развёртка подобраны верно. Переходите к «Задаче 3.2».</span>`;
+                    showToast("Задача 3.1 выполнена (+10 б.)!");
+                } else {
+                    state.stage3Attempts[0] = (state.stage3Attempts[0] || 0) + 1;
+                    const tries = state.stage3Attempts[0];
+
+                    if (tries < 5) {
+                        fb.innerHTML = `<span class="text-amber-300">❌ Осциллограмма пока не соответствует заданию. Проверьте настройки прибора и повторите попытку.</span>`;
+                    } else {
+                        const hints = [];
+                        if (!powerOk) hints.push("включите питание POWER");
+                        if (!chanOk) hints.push(`выберите рабочий канал <b>MODE = ${m1.channel}</b>`);
+                        if (!coupOk) hints.push(`включите вход <b>${m1.channel}: AC</b> для отсечки постоянной составляющей`);
+                        if (!voltsOk) hints.push(`установите <b>VOLTS/DIV = ${VOLTS_DIV_STEPS[m1.voltsIdx].label}</b> и защёлкните <b>VAR: CAL ✓</b>`);
+                        if (!timeOk) hints.push(`установите <b>TIME/DIV = ${TIME_DIV_STEPS[m1.timeIdx].label}</b> (без x10 MAG)`);
+                        if (!trigOk) hints.push(`настройте синхронизацию <b>TRIG SOURCE = ${m1.channel}</b> и ручку <b>LEVEL</b>`);
+                        fb.innerHTML = `<span class="text-rose-300">💡 <b>Подсказка:</b> ${hints.join('; ')}.</span>`;
+                    }
+                }
+            } else {
+                const m2 = s3.m2;
+                const powerOk = state.power;
+                const modeOk = state.vertMode === 'DUAL' && state.probeSource === 'GEN';
+                const coupOk = state.ch1Coupling === 'DC' && state.ch2Coupling === 'DC';
+                const v1Ok = state.ch1VoltsIdx === m2.voltsIdx1 && state.varCalibrated;
+                const v2Ok = state.ch2VoltsIdx === m2.voltsIdx2 && !state.ch2Inv;
+                const timeOk = state.timeDivIdx === m2.timeIdx && !state.x10Mag;
+
+                const passed = powerOk && modeOk && coupOk && v1Ok && v2Ok && timeOk;
+
+                if (passed) {
+                    state.scores.stage3m1 = 10;
+                    updateScoreUI();
+                    saveStateToStorage();
+                    fb.innerHTML = `<span class="text-emerald-400 font-bold">✅ Задача 3.2 решена (+10 б.)! Двухканальный режим настроен верно. Переходите к Этапу 4.</span>`;
+                    showToast("Задача 3.2 выполнена (+10 б.)!");
+                } else {
+                    state.stage3Attempts[1] = (state.stage3Attempts[1] || 0) + 1;
+                    const tries = state.stage3Attempts[1];
+
+                    if (tries < 5) {
+                        fb.innerHTML = `<span class="text-amber-300">❌ Осциллограмма пока не соответствует заданию. Проверьте оба канала, развёртку и режим DUAL.</span>`;
+                    } else {
+                        const hints = [];
+                        if (!powerOk) hints.push("включите питание POWER");
+                        if (!modeOk) hints.push("включите двухканальный режим <b>MODE = DUAL</b>");
+                        if (!coupOk) hints.push("переключите входы CH1 и CH2 в режим DC");
+                        if (!v1Ok) hints.push(`установите CH1 VOLTS/DIV = ${VOLTS_DIV_STEPS[m2.voltsIdx1].label}`);
+                        if (!v2Ok) hints.push(`установите CH2 VOLTS/DIV = ${VOLTS_DIV_STEPS[m2.voltsIdx2].label} (без INV)`);
+                        if (!timeOk) hints.push(`установите TIME/DIV = ${TIME_DIV_STEPS[m2.timeIdx].label}`);
+                        fb.innerHTML = `<span class="text-rose-300">💡 <b>Подсказка:</b> ${hints.join('; ')}.</span>`;
+                    }
+                }
+            }
+        }
+
+        /**************************************************************************
+         * 11. QUIZ GENERATOR (Mulberry32 PRNG)
+         **************************************************************************/
+        function buildQuizForVariant() {
+            const container = document.getElementById('quizContainer');
+            container.innerHTML = '';
+            activeQuizItems = [];
+            const rng = createSeededRng(state.variant * 9973 + 137);
+
+            const poolIndices = QUIZ_POOL.map((_, idx) => idx);
+            for (let i = poolIndices.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                const tmp = poolIndices[i];
+                poolIndices[i] = poolIndices[j];
+                poolIndices[j] = tmp;
+            }
+
+            for (let k = 0; k < 3; k++) {
+                const qIdx = poolIndices[k];
+                const rawQ = QUIZ_POOL[qIdx];
+
+                const indexedOpts = rawQ.options.map((text, idx) => ({ text, isCorrect: idx === rawQ.correct }));
+                for (let j = indexedOpts.length - 1; j > 0; j--) {
+                    const swapIdx = Math.floor(rng() * (j + 1));
+                    const tmp = indexedOpts[j];
+                    indexedOpts[j] = indexedOpts[swapIdx];
+                    indexedOpts[swapIdx] = tmp;
+                }
+
+                activeQuizItems.push({ q: rawQ.q, opts: indexedOpts });
+
+                const card = document.createElement('div');
+                card.className = "bg-slate-950 p-2.5 rounded-xl border border-slate-800 space-y-1.5 text-xs";
+                card.innerHTML = `
+                    <div class="font-semibold text-slate-200 text-[11px]">${k + 1}. ${rawQ.q}</div>
+                    <div class="space-y-1">
+                        ${indexedOpts.map((o, oIdx) => `
+                            <label class="flex items-start gap-2 p-1.5 rounded-lg bg-slate-900 hover:bg-slate-800/80 border border-slate-800 cursor-pointer">
+                                <input type="radio" name="quizQ${k}" value="${oIdx}" class="mt-0.5 accent-purple-500">
+                                <span class="text-slate-300 text-[11px] leading-snug">${o.text}</span>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+                container.appendChild(card);
+            }
+        }
+
+        function verifyStage4Quiz() {
+            let pts = 0;
+            activeQuizItems.forEach((item, k) => {
+                const checked = document.querySelector(`input[name="quizQ${k}"]:checked`);
+                if (checked) {
+                    const chosenIdx = parseInt(checked.value, 10);
+                    if (item.opts[chosenIdx].isCorrect) pts += 5;
+                }
+            });
+
+            state.scores.stage4 = Math.max(state.scores.stage4, pts);
+            updateScoreUI();
+            saveStateToStorage();
+
+            const fb = document.getElementById('stage4QuizFeedback');
+            if (pts === 15) {
+                fb.innerHTML = `<span class="text-emerald-400 font-bold">🎉 Все 3 ответа верны (15/15 б.)!</span>`;
+                showToast("Тест сдан на 15/15 баллов!");
+            } else {
+                fb.innerHTML = `<span class="text-amber-300">Набрано ${pts} из 15 баллов.</span>`;
+            }
+        }
+
+        /**************************************************************************
+         * 12. SCORING & REPORT CARD
+         **************************************************************************/
+        function getTotalScore() {
+            return getStage1Total() + (state.scores.stage2 || 0) + (state.scores.stage3m0 || 0) + (state.scores.stage3m1 || 0) + (state.scores.stage4 || 0);
+        }
+
+        function updateScoreUI() {
+            const total = getTotalScore();
+            const s1Total = getStage1Total();
+            const s3Total = (state.scores.stage3m0 || 0) + (state.scores.stage3m1 || 0);
+
+            document.getElementById('totalScoreBadge').textContent = total;
+            document.getElementById('statusStage1').textContent = `${s1Total}/30`;
+            document.getElementById('statusStage2').textContent = `${state.scores.stage2 || 0}/35`;
+            document.getElementById('statusStage3').textContent = `${s3Total}/20`;
+            document.getElementById('statusStage4').textContent = `${state.scores.stage4 || 0}/15`;
+
+            updateReportCard();
+        }
+
+        function computeVerificationHash() {
+            const total = getTotalScore();
+            const s1Total = getStage1Total();
+            const cleanName = state.studentName.trim().toLowerCase();
+            const cleanGroup = state.studentGroup.trim().toLowerCase();
+            const raw = `${state.variant}-${total}-${s1Total}-${state.scores.stage2 || 0}-${cleanName}-${cleanGroup}`;
+            let hash = 2166136261;
+            for (let i = 0; i < raw.length; i++) {
+                hash ^= raw.charCodeAt(i);
+                hash = Math.imul(hash, 16777619);
+            }
+            const hex = (hash >>> 0).toString(16).toUpperCase().padStart(8, '0');
+            return `GOS-${state.variant.toString().padStart(2, '0')}-${total}-${hex.slice(0, 4)}`;
+        }
+
+        function updateReportCard() {
+            const total = getTotalScore();
+            const s1Total = getStage1Total();
+            const s3Total = (state.scores.stage3m0 || 0) + (state.scores.stage3m1 || 0);
+
+            document.getElementById('reportTotalScore').textContent = total;
+            document.getElementById('reportStudentName').textContent = state.studentName || 'Не указано';
+            document.getElementById('reportStudentGroup').textContent = state.studentGroup || 'Не указана';
+            document.getElementById('reportVariantNum').textContent = state.variant;
+            document.getElementById('reportHashCode').textContent = computeVerificationHash();
+
+            document.getElementById('reportS1').textContent = `${s1Total}/30`;
+            document.getElementById('reportS2').textContent = `${state.scores.stage2 || 0}/35`;
+            document.getElementById('reportS3').textContent = `${s3Total}/20`;
+            document.getElementById('reportS4').textContent = `${state.scores.stage4 || 0}/15`;
+
+            let gradeText = 'Оценка: 2';
+            let gradeColor = 'text-rose-400';
+            if (total >= 85) { gradeText = 'Оценка: 5 (Отлично)'; gradeColor = 'text-emerald-400'; }
+            else if (total >= 70) { gradeText = 'Оценка: 4 (Хорошо)'; gradeColor = 'text-sky-400'; }
+            else if (total >= 55) { gradeText = 'Оценка: 3 (Удовл.)'; gradeColor = 'text-amber-400'; }
+
+            const gb = document.getElementById('reportGradeBadge');
+            gb.textContent = gradeText;
+            gb.className = `text-[11px] font-bold ${gradeColor}`;
+        }
+
+        function openStudentModal() {
+            document.getElementById('modalStudentName').value = state.studentName;
+            document.getElementById('modalStudentGroup').value = state.studentGroup;
+            document.getElementById('modalVariantNum').value = state.variant;
+            syncStudentVariantLock();
+            document.getElementById('studentModal').classList.remove('hidden');
+            document.getElementById('modalStudentName').focus();
+        }
+
+        function closeStudentModal() {
+            if (!state.studentName.trim()) { showToast('Укажите фамилию и сохраните данные.'); return; }
+            document.getElementById('studentModal').classList.add('hidden');
+        }
+
+        function saveStudentInfo() {
+            const nameVal = document.getElementById('modalStudentName').value.trim();
+            const groupVal = document.getElementById('modalStudentGroup').value.trim();
+            if (!nameVal) {
+                showToast("⚠️ Пожалуйста, укажите фамилию или ФИО!");
+                return;
+            }
+            const newVar = Number(document.getElementById('modalVariantNum').value);
+            if (!Number.isInteger(newVar) || newVar < 1 || newVar > 50) {
+                showToast('Выберите целый номер варианта от 1 до 50.'); return;
+            }
+            if (newVar !== state.variant && getTotalScore() > 0) {
+                showToast('Вариант зафиксирован. Для нового варианта сбросьте весь прогресс.');
+                document.getElementById('modalVariantNum').value = state.variant;
+                return;
+            }
+
+            state.studentName = nameVal;
+            state.studentGroup = groupVal;
+
+            const badge = document.getElementById('studentBadgeText');
+            badge.textContent = state.studentName ? `👤 ${state.studentName.split(' ')[0]}` : '👤 Студент';
+
+            if (newVar !== state.variant) {
+                setVariant(newVar, false);
+            } else {
+                updateReportCard();
+                saveStateToStorage();
+            }
+            closeStudentModal();
+            showToast("Данные сохранены!");
+        }
+
+        function copyReportToClipboard() {
+            const total = getTotalScore();
+            const s1Total = getStage1Total();
+            const s3Total = (state.scores.stage3m0 || 0) + (state.scores.stage3m1 || 0);
+            const text = [
+                `ЛАБОРАТОРНАЯ РАБОТА: ОСЦИЛЛОГРАФ GOS-620 (МЕТРОЛОГИЯ)`,
+                `Студент: ${state.studentName || 'Не указано'}`,
+                `Группа: ${state.studentGroup || 'Не указана'}`,
+                `Вариант №: ${state.variant}`,
+                `----------------------------------------`,
+                `Этап 1 (Настройка органов управления): ${s1Total} / 30`,
+                `Этап 2 (Измерение параметров сигнала): ${state.scores.stage2 || 0} / 35`,
+                `Этап 3 (Самостоятельный подбор масштаба): ${s3Total} / 20`,
+                `Этап 4 (Блиц-тест по лицевой панели): ${state.scores.stage4 || 0} / 15`,
+                `----------------------------------------`,
+                `ИТОГО БАЛЛОВ: ${total} / 100`,
+                `Код верификации: ${computeVerificationHash()}`
+            ].join('\n');
+
+            const fallbackCopy = () => {
+                const ta = document.createElement('textarea');
+                ta.value = text;
+                ta.style.position = 'fixed';
+                ta.style.opacity = '0';
+                document.body.appendChild(ta);
+                ta.focus();
+                ta.select();
+                try {
+                    document.execCommand('copy');
+                    showToast("Отчёт скопирован в буфер обмена!");
+                } catch (err) {
+                    showToast("Ошибка копирования отчёта");
+                }
+                document.body.removeChild(ta);
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(text)
+                    .then(() => showToast("Отчёт скопирован в буфер обмена!"))
+                    .catch(() => fallbackCopy());
+            } else {
+                fallbackCopy();
+            }
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toastBox');
+            t.textContent = msg;
+            t.classList.remove('hidden');
+            clearTimeout(t._timer);
+            t._timer = setTimeout(() => t.classList.add('hidden'), 3000);
+        }
+
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>

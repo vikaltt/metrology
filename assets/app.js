@@ -29,7 +29,11 @@
       sourceLink.setAttribute('aria-current', 'page');
       nav.querySelector('.nav-home').removeAttribute('aria-current');
     }
-    nav.append(sourceLink);
+    const practiceLink = document.createElement('a');
+    practiceLink.className = 'nav-home';
+    practiceLink.href = `${prefix}index.html#practice`;
+    practiceLink.textContent = 'Практические работы';
+    nav.append(practiceLink, sourceLink);
     const search = nav.querySelector('input');
     const items = Array.from(nav.querySelectorAll('li'));
     search.addEventListener('input', () => {
