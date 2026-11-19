@@ -105,3 +105,25 @@ details[id]:target{border-color:var(--accent)}
 
 /* Отдельный блок практических работ */
 .practice-grid .chapter-card{align-items:flex-start}.practice-grid .chapter-card>div{min-width:0}.practice-links{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:14px}.practice-links a{font-size:14px;font-weight:600;min-height:36px;display:inline-flex;align-items:center}.practice-grid article.chapter-card:hover{transform:none}
+
+/* Компактный каталог на стартовой странице. */
+.home-main .hero{padding:6px 0 22px}
+.home-main .hero h1{font-size:clamp(2rem,4vw,3rem);margin:.35rem 0 .65rem}
+.home-main .lead{font-size:1.08rem;line-height:1.55;margin:.5rem 0 1rem}
+.home-shortcuts{display:flex;align-items:center;flex-wrap:wrap;gap:6px 20px}
+.home-shortcuts>a:not(.button-link){display:inline-flex;align-items:center;min-height:44px;font-size:14px;font-weight:600}
+.home-main h2{font-size:clamp(1.35rem,2.3vw,1.7rem);margin:1.6rem 0 .6rem}
+.home-main .section-intro{font-size:.9rem;line-height:1.5;margin:.5rem 0 .9rem}
+.home-main .chapter-grid{gap:8px 12px;margin:14px 0 24px}
+.home-main .chapter-card{padding:12px 14px;gap:12px;align-items:center;min-width:0}
+.home-main .chapter-card>div{min-width:0}
+.home-main .chapter-card h3{font-size:15px;line-height:1.4;margin:0;overflow-wrap:anywhere;text-wrap:pretty}
+.home-main .card-number{font-size:20px;flex:0 0 25px}
+.home-main .practice-grid .chapter-card{align-items:flex-start}
+.home-main .practice-grid .chapter-card h3{margin-bottom:4px}
+.home-main .practice-grid .chapter-card p{font-size:13px;line-height:1.45}
+.home-main .practice-links{gap:2px 14px;margin-top:6px}
+.home-main .practice-links a{min-height:44px}
+.home-main section[aria-labelledby="models-title"] p{font-size:14px;line-height:1.65;margin:.5rem 0}
+@media(min-width:761px) and (max-width:1000px){.home-main .chapter-grid:not(.practice-grid){grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.home-main .hero{padding-top:0}.home-main .home-shortcuts{gap:4px 16px}.home-main .chapter-grid{margin:12px 0 20px}.home-main .chapter-card{padding:11px 12px}.home-main h2{margin-top:1.4rem}}

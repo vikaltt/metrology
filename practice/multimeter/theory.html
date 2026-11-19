@@ -1,0 +1,1282 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Теория — мультиметр Mastech MY64</title>
+<style>
+  :root { color-scheme: light; font-family: system-ui, sans-serif; color: #16273a; background: #f1f4f6; line-height: 1.56; }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  header, main, footer { max-width: 65rem; margin: auto; padding: 1.25rem clamp(.85rem, 4vw, 2.5rem); }
+  header { padding-top: clamp(1.5rem, 6vw, 4rem); }
+  h1, h2, h3 { line-height: 1.18; text-wrap: balance; }
+  h1 { font-size: clamp(2rem, 6vw, 3.5rem); margin: .2rem 0 .8rem; }
+  h2 { font-size: clamp(1.38rem, 4vw, 2rem); margin: 0 0 1rem; }
+  h3 { font-size: 1.12rem; margin: 1rem 0 .4rem; }
+  p { margin: .55rem 0; }
+  a { color: #085963; text-underline-offset: .16em; }
+  a:focus-visible, button:focus-visible, summary:focus-visible { outline: 3px solid #a45200; outline-offset: 3px; }
+  nav, .controls { display: flex; flex-wrap: wrap; gap: .45rem; margin-top: 1rem; }
+  nav a, button { border: 1px solid #a7bbbf; padding: .48rem .72rem; border-radius: .45rem; background: white; color: #15464b; font: inherit; }
+  button, summary { cursor: pointer; }
+  button[aria-pressed="true"], .primary { background: #075b62; color: white; border-color: #075b62; }
+  .primary { display: inline-block; border-radius: .45rem; padding: .58rem .85rem; font-weight: 650; }
+  .card { background: #fff; border: 1px solid #cdd9e1; border-radius: .8rem; padding: clamp(.85rem, 3vw, 1.55rem); margin-bottom: 1rem; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(.8rem, 4vw, 2rem); align-items: center; }
+  .panel-grid { grid-template-columns: minmax(0, 23.75rem) minmax(0, 1fr); align-items: start; }
+  figure { margin: 0; min-width: 0; }
+  figcaption { margin-top: .45rem; font-size: .9rem; color: #415366; }
+  svg { display: block; width: 100%; height: auto; margin-inline: auto; }
+  .schematic { max-width: 23rem; }
+  .schematic text { fill: #16273a; font: 600 15px system-ui, sans-serif; }
+  .wire, .component { stroke: #324b60; stroke-width: 2.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .red { stroke: #a92529; }
+  .black { stroke: #1c2a37; }
+  .node { fill: #324b60; }
+  #meter-panel { display: block; overflow: hidden; max-width: 380px; margin-inline: auto; border-radius: .65rem; background: #101720; }
+  .callout { padding: .65rem .8rem; background: #eef7f5; border-left: .24rem solid #20736f; border-radius: .25rem; }
+  .warning { background: #fff5df; border-color: #a66310; }
+  .reading { font: 700 1em ui-monospace, Consolas, monospace; background: #e6efdc; color: #223925; padding: .04em .22em; white-space: nowrap; }
+  dl { margin: .65rem 0; }
+  dt { font-weight: 700; }
+  dd { margin: 0 0 .5rem; }
+  li + li { margin-top: .28rem; }
+  ol, ul { padding-inline-start: 1.3rem; }
+  details { margin: .85rem 0; }
+  summary { font-weight: 650; color: #085963; }
+  footer { font-size: .9rem; }
+  @media (max-width: 42rem) {
+    .grid { grid-template-columns: minmax(0, 1fr); }
+    #meter-panel { max-width: 18rem; }
+    .panel-copy { display: contents; }
+    .panel-copy > dl { order: 1; }
+    .panel-copy h3 { margin-top: 0; }
+  }
+  @media print {
+    :root { background: white; color: black; }
+    header, main, footer { padding: 0; }
+    .controls, nav, .primary { display: none; }
+    .card { padding: .6rem; break-inside: avoid; }
+    #meter-panel { max-width: 12rem; print-color-adjust: exact; }
+  }
+</style>
+<style id="site-theory-theme">
+  :root { color: #233b43; background: #f6f5ef; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif; }
+  h1, h2, h3 { color: #203f48; }
+  .card { background: #fffefa; border-color: #d5dfda; }
+  nav a, button { border-color: #b9ccc2; }
+  button[aria-pressed="true"], .primary { background: #17665d; border-color: #17665d; }
+  .callout { background: #eaf3ee; } .warning { background: #fff5df; }
+  @media print { :root { color: #111; background: #fff; } }
+</style><style id="publication-navigation-style">.publication-nav{box-sizing:border-box;position:relative;z-index:40;display:flex;flex-wrap:wrap;gap:8px 20px;padding:12px 16px;background:#edf4f1;color:#164e46;border-bottom:1px solid #bdcec7;font:600 14px/1.5 Arial,sans-serif}.publication-nav a{color:#164e46;text-decoration:underline;min-height:24px;display:inline-flex;align-items:center}.publication-nav a:focus-visible{outline:2px solid currentColor;outline-offset:3px}@media print{.publication-nav{display:none!important}}.publication-nav{margin:0}.publication-nav a{padding:0;border:0;background:transparent}</style>
+</head>
+<body>
+<nav class="publication-nav" aria-label="Переходы по работе"><a href="../../index.html#practice">← Практические работы</a><a href="practice.html">Перейти к практике →</a></nav>
+<header>
+  <h1>Как пользоваться Mastech MY64</h1>
+  <p>Научитесь выбирать гнёзда и предел, подключать щупы и читать показание. Затем выполните свой вариант на стенде.</p>
+  <nav aria-label="Разделы теории">
+    <a href="#instrument">Панель и первый отсчёт</a><a href="#voltage">Напряжение</a><a href="#current">Ток</a><a href="#resistance">Сопротивление</a><a href="#components">Диод и прозвонка</a><a href="#notebook">В тетрадь</a>
+  </nav>
+</header>
+<main id="main">
+  <section class="card" id="instrument">
+    <h2>Панель MY64 и первое измерение</h2>
+    <div class="grid panel-grid">
+      <figure>
+        <div id="meter-panel" role="group" aria-label="Лицевая панель мультиметра MY64"></div>
+        <template id="meter-template">
+<style>
+    :host {
+      --bg-page: #0f1318;
+      --holster-green: #0e6f48;
+      --holster-dark: #07472d;
+      --holster-highlight: #1ea36e;
+      --case-black: #1c1e22;
+      --panel-black: #17191c;
+      --lcd-on: #8d9c87;
+      --lcd-off: #667062;
+      --seg-on: #111810;
+      --seg-off: rgba(17, 24, 16, 0.075);
+      --mastech-blue: #0077c8;
+      --mastech-red: #e03c28;
+      --jack-red: #c82822;
+      --jack-black: #1f2226;
+    }
+    * { box-sizing: border-box; }
+    :host { font: 16px/normal system-ui, sans-serif; color: #f1f5f9; }
+    .holster-shell {
+      position: relative;
+      width: 100%;
+      max-width: 348px;
+      background: linear-gradient(145deg, #168055 0%, #0d6943 50%, #084c30 100%);
+      border-radius: 36px 36px 40px 40px;
+      padding: 13px 13px 15px;
+      border: 3px solid #053521;
+      box-shadow:
+        0 18px 36px rgba(0, 0, 0, 0.85),
+        inset 0 3px 5px rgba(255, 255, 255, 0.25),
+        inset 0 -6px 12px rgba(0, 0, 0, 0.7);
+      z-index: 10;
+    }
+
+    .holster-shell.shake {
+      animation: caseShake 0.45s cubic-bezier(.36,.07,.19,.97) both;
+    }
+    @keyframes caseShake {
+      10%, 90% { transform: translate3d(-5px, 1px, 0) rotate(-0.8deg); }
+      20%, 80% { transform: translate3d(6px, -2px, 0) rotate(0.8deg); }
+      30%, 50%, 70% { transform: translate3d(-7px, 2px, 0) rotate(-1.2deg); }
+      40%, 60% { transform: translate3d(7px, -1px, 0) rotate(1.2deg); }
+    }
+
+    /* Верхние и нижние ребра зелёного защитного чехла */
+    .bumper-notches {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 22px;
+      pointer-events: none;
+    }
+    .bumper-notches.top { top: -5px; }
+    .bumper-notches.bottom { bottom: -5px; }
+    .bumper-rib {
+      width: 18px;
+      height: 6px;
+      background: linear-gradient(90deg, #064028, #198d5e, #064028);
+      border-radius: 4px;
+      border: 1px solid #042b1b;
+    }
+
+    /* Боковые ребра зелёного чехла */
+    .side-ribs {
+      position: absolute;
+      top: 155px;
+      bottom: 70px;
+      width: 7px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+    .side-ribs.left { left: -6px; }
+    .side-ribs.right { right: -6px; }
+    .side-rib {
+      width: 7px;
+      height: 17px;
+      background: linear-gradient(180deg, #063d26, #18895b, #053320);
+      border-radius: 3px;
+      box-shadow: 0 2px 3px rgba(0, 0, 0, 0.75);
+    }
+
+    /* Внутренний матово-чёрный корпус прибора */
+    .meter-inner-body {
+      background: linear-gradient(180deg, #25282c 0%, #1a1c20 40%, #15171a 100%);
+      border-radius: 24px 24px 28px 28px;
+      padding: 11px 11px 12px;
+      border: 2.5px solid #0d0e10;
+      box-shadow:
+        inset 0 2px 4px rgba(255, 255, 255, 0.12),
+        0 2px 6px rgba(0, 0, 0, 0.85);
+    }
+
+    /* Утопленная рамка ЖК-экрана */
+    .lcd-bezel {
+      background: linear-gradient(180deg, #16181b 0%, #22252a 100%);
+      border-radius: 13px;
+      padding: 11px 14px;
+      border: 2px solid #0e1012;
+      box-shadow:
+        inset 0 5px 12px rgba(0, 0, 0, 0.9),
+        0 1px 1px rgba(255, 255, 255, 0.1);
+      margin-bottom: 7px;
+    }
+
+    .lcd-glass {
+      position: relative;
+      height: 78px;
+      background: linear-gradient(170deg, #869680 0%, #96a690 55%, #7e8e78 100%);
+      border-radius: 5px;
+      border: 2.5px solid #353b33;
+      box-shadow:
+        inset 0 3px 8px rgba(0, 0, 0, 0.48),
+        inset 0 0 16px rgba(0, 0, 0, 0.22);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 4px 10px;
+      transition: background 0.2s ease;
+    }
+    .lcd-glass.off {
+      background: linear-gradient(170deg, #555e52 0%, #5e685a 100%);
+    }
+
+    /* Лицевая приборная панель под экраном */
+    .face-plate {
+      background: #1b1d21;
+      border-radius: 10px 10px 20px 20px;
+      border: 1.5px solid #101214;
+      box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.8);
+      padding: 7px 8px 9px;
+      position: relative;
+    }
+
+    .upper-controls {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      padding: 0 2px;
+      margin-bottom: -4px;
+    }
+
+    .power-block {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-top: 3px;
+    }
+
+    .red-power-btn {
+      width: 40px;
+      height: 17px;
+      border-radius: 9px;
+      background: linear-gradient(180deg, #ff4d4d 0%, #d62222 65%, #8c1111 100%);
+      border: 2px solid #0e1012;
+      box-shadow:
+        0 3px 5px rgba(0, 0, 0, 0.8),
+        inset 0 1.5px 2px rgba(255, 255, 255, 0.45);
+      cursor: pointer;
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .red-power-btn.pressed {
+      transform: translateY(1.5px);
+      background: linear-gradient(180deg, #d92626 0%, #780e0e 100%);
+      box-shadow:
+        0 1px 2px rgba(0, 0, 0, 0.9),
+        inset 0 2px 4px rgba(0, 0, 0, 0.65);
+    }
+
+    .on-off-sub {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 8.5px;
+      font-weight: 900;
+      color: var(--mastech-red);
+      letter-spacing: -0.2px;
+    }
+    .circle-i {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+      border: 1.3px solid #e2e8f0;
+      color: #e2e8f0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 7.5px;
+      font-weight: 900;
+    }
+
+    /* Надпись AUTO POWER OFF */
+    .auto-power-group {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 5px;
+    }
+    .auto-power-label {
+      font-size: 9.5px;
+      font-weight: 900;
+      color: #0088e0;
+      letter-spacing: -0.2px;
+    }
+    .blue-t-icon {
+      width: 19px;
+      height: 19px;
+      background: #0077c8;
+      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
+    }
+
+    .hfe-cluster {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .hfe-row {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
+    .ebce-col {
+      display: flex;
+      flex-direction: column;
+      font-size: 7.5px;
+      font-weight: 900;
+      color: var(--mastech-red);
+      line-height: 1.05;
+    }
+    .hfe-socket-disc {
+      width: 31px;
+      height: 31px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #c5ccd6 0%, #878e99 70%, #3d4147 100%);
+      border: 2.5px solid #0e1013;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .pnp-npn-row {
+      display: flex;
+      gap: 11px;
+      font-size: 7.5px;
+      font-weight: 900;
+      color: #e2e8f0;
+      margin-top: 1px;
+    }
+
+    /* =====================================================================
+       ===================================================================== */
+    .dial-wrapper {
+      position: relative;
+      width: 100%;
+      height: 294px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+    }
+    .dial-svg {
+      width: 314px;
+      height: 294px;
+      overflow: visible;
+    }
+    .dial-pos-hit {
+      cursor: pointer;
+    }
+    .dial-pos-text {
+      font-family: "Roboto Condensed", "Arial Narrow", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 8.8px;
+      font-weight: 800;
+      fill: #f1f5f9;
+      pointer-events: none;
+      transition: fill 0.12s;
+      letter-spacing: -0.35px;
+    }
+    .dial-pos-text.active {
+      fill: #ffec4d;
+      font-weight: 900;
+      filter: drop-shadow(0 0 3px rgba(255, 236, 77, 0.8));
+    }
+    .dial-pos-dot {
+      fill: #e2e8f0;
+      pointer-events: none;
+    }
+    .dial-pos-dot.active {
+      fill: #ffec4d;
+      r: 3;
+    }
+    .cont-icon-group path,
+    .cont-icon-group polygon,
+    .cont-icon-group line,
+    .cont-icon-group ellipse {
+      stroke: #f1f5f9;
+      fill: #f1f5f9;
+      transition: all 0.12s;
+    }
+    .cont-icon-group.active path,
+    .cont-icon-group.active polygon,
+    .cont-icon-group.active line,
+    .cont-icon-group.active ellipse {
+      stroke: #ffec4d;
+      fill: #ffec4d;
+      filter: drop-shadow(0 0 3px rgba(255, 236, 77, 0.8));
+    }
+
+    /* =====================================================================
+       НИЖНИЙ БЛОК ИЗ 4 РАЗЪЁМОВ: 10A, mA, COM, VΩHz (ТОЧНО КАК НА MY64)
+       ===================================================================== */
+    .jacks-panel {
+      position: relative;
+      margin-top: 1px;
+      padding-top: 4px;
+      border-top: 1.5px solid #121417;
+    }
+
+    .jacks-titles {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      text-align: center;
+      font-size: 11.5px;
+      font-weight: 900;
+      margin-bottom: 3px;
+      align-items: center;
+    }
+    .j-title-red { color: var(--mastech-red); }
+    .j-title-com { color: #f8fafc; }
+
+    .jacks-sockets-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      justify-items: center;
+      align-items: center;
+      position: relative;
+    }
+
+    .socket-well {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #0d0f12;
+      border: 3px solid #22252a;
+      box-shadow:
+        inset 0 3px 6px rgba(0, 0, 0, 0.95),
+        0 1px 2px rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .socket-ring {
+      width: 27px;
+      height: 27px;
+      border-radius: 50%;
+      border: 5.5px solid var(--jack-red);
+      background: #060708;
+      box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.95);
+    }
+    .socket-ring.com-ring {
+      border-color: #2f3338;
+    }
+    .socket-well.drop-target {
+      box-shadow: 0 0 15px #51cf66;
+      transform: scale(1.1);
+    }
+    .socket-well.plugged {
+      border-color: #4dabf7;
+    }
+
+    .jacks-markings-svg {
+      width: 100%;
+      height: 34px;
+      display: block;
+      margin-top: 1px;
+    }
+
+    /* Нижний шильдик MASTECH® MY64 в синей рамке */
+    .mastech-badge {
+      margin-top: 2px;
+      border: 1.8px solid var(--mastech-blue);
+      border-radius: 5px;
+      background: #16181c;
+      padding: 2px 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .mastech-logo {
+      color: var(--mastech-red);
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.5px;
+      font-family: "Arial Black", Impact, sans-serif;
+    }
+    .mastech-model {
+      color: #f8fafc;
+      font-size: 15px;
+      font-weight: 900;
+      letter-spacing: 0.6px;
+      font-family: "Arial Black", Impact, sans-serif;
+    }
+    .meter-stage { position: relative; width: 380px; padding: 7px; transform-origin: top left; }
+    .holster-shell { max-width: none; }
+    .jacks-titles { font-size: 16px; }
+    .dial-svg { display: block; width: 100%; height: auto; max-width: 314px; }
+    .dial-pos-hit { cursor: inherit; }
+    .interactive-wires-svg {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 30;
+    }
+    .battery-demo { padding: 18px 0 12px; }
+    .battery-demo .my64-battery { display: block; width: 224px; height: auto; margin: 0 auto; }
+    .battery-demo[hidden] { display: none; }
+    .socket-well.demo-highlight { outline: 2px solid #ffec4d; }
+    .demo-highlight > .dial-pos-dot { fill: #ffec4d; }
+    .demo-highlight > .dial-pos-text { fill: #ffec4d; }
+    .demo-highlight > .cont-icon-group { fill: #ffec4d; stroke: #ffec4d; }
+    @media print { .meter-stage { print-color-adjust: exact; } }
+</style>
+<div class="meter-stage">
+  <div class="holster-shell" id="multimeterCase">
+
+    <!-- Верхние и нижние выступы зелёного защитного чехла -->
+    <div class="bumper-notches top">
+      <div class="bumper-rib"></div><div class="bumper-rib"></div><div class="bumper-rib"></div>
+    </div>
+    <div class="bumper-notches bottom">
+      <div class="bumper-rib"></div><div class="bumper-rib"></div><div class="bumper-rib"></div>
+    </div>
+
+    <!-- Боковые противоскользящие рёбра чехла -->
+    <div class="side-ribs left">
+      <div class="side-rib"></div><div class="side-rib"></div><div class="side-rib"></div>
+      <div class="side-rib"></div><div class="side-rib"></div><div class="side-rib"></div>
+    </div>
+    <div class="side-ribs right">
+      <div class="side-rib"></div><div class="side-rib"></div><div class="side-rib"></div>
+      <div class="side-rib"></div><div class="side-rib"></div><div class="side-rib"></div>
+    </div>
+
+    <!-- Чёрный внутренний корпус мультиметра -->
+    <div class="meter-inner-body">
+
+      <!-- УТОПЛЕННЫЙ ЖК-ЭКРАН (3.5 РАЗРЯДА, 7 СЕГМЕНТОВ) -->
+      <div class="lcd-bezel">
+        <div class="lcd-glass" id="lcdGlass">
+          <svg role="img" aria-label="Мультиметр включён" id="lcdSvg" width="100%" height="70" viewBox="0 0 280 70"></svg>
+        </div>
+      </div>
+
+      <!-- ЛИЦЕВАЯ ПАНЕЛЬ УПРАВЛЕНИЯ MY64 -->
+      <div class="face-plate">
+
+        <div class="upper-controls">
+          <div class="power-block">
+            <button class="red-power-btn pressed" id="powerBtn" aria-label="Питание мультиметра" aria-pressed="true" title="Включить / Выключить мультиметр"></button>
+            <div class="on-off-sub">
+              <span>ON/OFF</span>
+              <span class="circle-i">I</span>
+            </div>
+          </div>
+
+          <div class="auto-power-group">
+            <span class="auto-power-label">AUTO POWER OFF</span>
+          </div>
+
+        </div>
+
+        <div class="dial-wrapper">
+          <svg class="dial-svg" id="dialSvg" viewBox="0 0 314 294">
+            <defs>
+              <radialGradient id="turntableGrad" cx="36%" cy="30%" r="70%">
+                <stop offset="0%" stop-color="#3d4148" />
+                <stop offset="65%" stop-color="#24272c" />
+                <stop offset="100%" stop-color="#17191c" />
+              </radialGradient>
+              <linearGradient id="knobBarGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#4e535c" />
+                <stop offset="50%" stop-color="#2c2f36" />
+                <stop offset="100%" stop-color="#181a1e" />
+              </linearGradient>
+            </defs>
+
+            <!-- Слева внизу: CE, желтый треугольник IEC 61010 и колодка конденсаторов Cx -->
+            <text x="12" y="216" fill="#dcdfe6" font-size="13.5" font-weight="900">CE</text>
+            <polygon points="10,236 17,223 24,236" fill="#eab308" />
+            <text x="17" y="235" text-anchor="middle" fill="#111" font-size="8.5" font-weight="900">!</text>
+            <text x="28" y="229" fill="#dcdfe6" font-size="6.5" font-weight="800">IEC</text>
+            <text x="28" y="236" fill="#dcdfe6" font-size="6.5" font-weight="800">61010</text>
+
+            <!-- Разъём Cx (проверка ёмкости конденсаторов) слева внизу -->
+            <path d="M 20,262 L 20,256 L 36,256 M 54,256 L 70,256 L 70,262" fill="none" stroke="#e2e8f0" stroke-width="1.3" />
+            <text x="45" y="259" text-anchor="middle" fill="#e2e8f0" font-size="8.8" font-weight="900">C<tspan baseline-shift="sub" font-size="70%">x</tspan></text>
+            <rect x="14" y="264" width="62" height="13" rx="2" fill="#0d0e11" stroke="#2c3038" stroke-width="1.2" />
+            <rect x="20" y="268.5" width="19" height="4" fill="#25282e" />
+            <rect x="51" y="268.5" width="19" height="4" fill="#25282e" />
+
+            <!-- Знак РСТ (АЯ46) внизу правее центра -->
+            <g transform="translate(194, 254)">
+              <ellipse cx="12" cy="8" rx="10.5" ry="7" fill="none" stroke="#dcdfe6" stroke-width="1.3" />
+              <text x="12" y="11" text-anchor="middle" fill="#dcdfe6" font-size="8" font-weight="900">РСТ</text>
+              <text x="12" y="22" text-anchor="middle" fill="#dcdfe6" font-size="6.3" font-weight="800">АЯ46</text>
+            </g>
+
+            <!-- Белые радиальные разделители секторов, точки, подписи секторов и 32 положения (рендерятся через JS) -->
+            <g id="dialScaleLayer"></g>
+
+            <!-- Увеличенное углубление под центральный барабан переключателя (центр cx=157, cy=136) -->
+            <circle cx="157" cy="136" r="74" fill="#121417" stroke="#0b0c0e" stroke-width="2.5" />
+
+            <!-- Увеличенный вращающийся барабан переключателя (0° = строго вверх на 12:00) -->
+            <g id="rotaryTurntable" transform="rotate(75, 157, 136)" >
+              <circle cx="157" cy="136" r="70" fill="url(#turntableGrad)" stroke="#2e3238" stroke-width="1.5" />
+
+              <!-- Рифление на диске барабана параллельно ручке -->
+              <g stroke="#141619" stroke-width="2.2" opacity="0.9">
+                <line x1="136" y1="69" x2="136" y2="203" />
+                <line x1="141" y1="67" x2="141" y2="205" />
+                <line x1="146" y1="66" x2="146" y2="206" />
+                <line x1="168" y1="66" x2="168" y2="206" />
+                <line x1="173" y1="67" x2="173" y2="205" />
+                <line x1="178" y1="69" x2="178" y2="203" />
+              </g>
+
+              <!-- Центральная рукоятка переключателя (ориентирована на 12:00 при 0°) -->
+              <rect x="135" y="67" width="44" height="138" rx="4" fill="url(#knobBarGrad)" stroke="#101214" stroke-width="2" />
+              <line x1="139" y1="75" x2="139" y2="197" stroke="rgba(255,255,255,0.16)" stroke-width="1.4" stroke-linecap="round" />
+
+              <!-- Белый маркер-указатель на верхнем конце ручки (указывает строго на выбранную точку) -->
+              <rect x="153" y="72" width="8" height="12" rx="1" fill="#f8fafc" />
+            </g>
+          </svg>
+        </div>
+
+        <!-- НИЖНИЙ РЯД ИЗ 4 БАНАНОВЫХ ГНЁЗД: 10A, mA, COM, VΩHz -->
+        <div class="jacks-panel">
+          <div class="jacks-titles">
+            <span class="j-title-red">10A</span>
+            <span class="j-title-red">mA</span>
+            <span class="j-title-com">COM</span>
+            <span><b class="j-title-red">V</b><b style="color:#fff;">Ω</b><b class="j-title-red">Hz</b></span>
+          </div>
+
+          <div class="jacks-sockets-row">
+            <div class="socket-well" id="jack_10A" data-jack="10A" title="Гнездо 10A (до 10A кратковременно, без предохранителя)">
+              <div class="socket-ring"></div>
+            </div>
+            <div class="socket-well" id="jack_mA" data-jack="mA" title="Гнездо mA (до 200 мА, с предохранителем)">
+              <div class="socket-ring"></div>
+            </div>
+            <div class="socket-well" id="jack_COM" data-jack="COM" title="Общее гнездо COM (чёрный щуп)">
+              <div class="socket-ring com-ring"></div>
+            </div>
+            <div class="socket-well" id="jack_VO" data-jack="VO" title="Гнездо VΩHz (напряжение, сопротивление, диоды)">
+              <div class="socket-ring"></div>
+            </div>
+          </div>
+
+          <!-- Точная разметка предупреждений и скобок под гнёздами как на фото MY64 -->
+          <svg class="jacks-markings-svg" viewBox="0 0 304 34">
+            <!-- Желтые треугольники между гнёздами -->
+            <g transform="translate(70, 0)">
+              <polygon points="0,11 6,0 12,11" fill="#eab308" />
+              <text x="6" y="10" text-anchor="middle" fill="#111" font-size="8" font-weight="900">!</text>
+            </g>
+            <g transform="translate(146, 0)">
+              <polygon points="0,11 6,0 12,11" fill="#eab308" />
+              <text x="6" y="10" text-anchor="middle" fill="#111" font-size="8" font-weight="900">!</text>
+            </g>
+            <g transform="translate(222, 0)">
+              <polygon points="0,11 6,0 12,11" fill="#eab308" />
+              <text x="6" y="10" text-anchor="middle" fill="#111" font-size="8" font-weight="900">!</text>
+            </g>
+
+            <!-- Скобки от 10A, mA и VΩHz к COM -->
+            <path d="M 36,13 L 36,30 L 186,30 L 186,13" fill="none" stroke="#e2e8f0" stroke-width="1.2" />
+            <path d="M 114,13 L 114,23 L 180,23 L 180,13" fill="none" stroke="#e2e8f0" stroke-width="1.2" />
+            <path d="M 194,13 L 194,25 L 268,25 L 268,13" fill="none" stroke="#e2e8f0" stroke-width="1.2" />
+
+            <text x="74" y="19" text-anchor="middle" fill="#f1f5f9" font-size="6.3" font-weight="800">20A 15SEC MAX</text>
+            <text x="74" y="27" text-anchor="middle" fill="#f1f5f9" font-size="6.5" font-weight="800">UNFUSED</text>
+
+            <text x="147" y="18" text-anchor="middle" fill="#f1f5f9" font-size="6.3" font-weight="800">200mA MAX</text>
+            <text x="147" y="26" text-anchor="middle" fill="#f1f5f9" font-size="6.5" font-weight="800">FUSED</text>
+
+            <text x="231" y="16" text-anchor="middle" fill="#f1f5f9" font-size="6" font-weight="800">CAT III 600V</text>
+            <text x="231" y="23" text-anchor="middle" fill="#f1f5f9" font-size="6" font-weight="800">CAT II 1000V</text>
+            <text x="231" y="31" text-anchor="middle" fill="#f1f5f9" font-size="6" font-weight="800">MAX 1000V</text>
+          </svg>
+
+          <!-- Шильдик MASTECH® MY64 -->
+          <div class="mastech-badge">
+            <span class="mastech-logo">MASTECH<sup style="font-size:8px;">®</sup></span>
+            <span class="mastech-model">MY64</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <div class="battery-demo" id="batteryDemo">
+<svg xmlns="http://www.w3.org/2000/svg" class="my64-battery" viewBox="0 0 224 80"
+     role="img" aria-label="Цилиндрическая батарейка: слева плоский минус, справа выступающий плюс">
+  <defs>
+    <linearGradient id="my64-cell-metal" x1="0" x2="0" y1="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#a2acb1"/>
+      <stop offset=".24" stop-color="#e8edf0"/>
+      <stop offset=".47" stop-color="#a9b4ba"/>
+      <stop offset=".78" stop-color="#56636b"/>
+      <stop offset="1" stop-color="#879298"/>
+    </linearGradient>
+    <linearGradient id="my64-cell-sleeve" x1="0" x2="0" y1="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#202631"/>
+      <stop offset=".27" stop-color="#485564"/>
+      <stop offset=".58" stop-color="#202b39"/>
+      <stop offset="1" stop-color="#101720"/>
+    </linearGradient>
+    <linearGradient id="my64-cell-copper" x1="0" x2="0" y1="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#a74f22"/>
+      <stop offset=".25" stop-color="#f6be88"/>
+      <stop offset=".47" stop-color="#e99a55"/>
+      <stop offset=".82" stop-color="#9a4928"/>
+      <stop offset="1" stop-color="#74351e"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="112" cy="67" rx="87" ry="6" fill="#080d15" opacity=".34"/>
+  <path d="M185 30h19c3 0 5 4 5 10s-2 10-5 10h-19z" fill="url(#my64-cell-metal)" stroke="#64717b"/>
+  <ellipse cx="203" cy="40" rx="5" ry="9.6" fill="#b6c2c9" opacity=".7"/>
+  <path d="M20 14h168c5 0 8 11 8 26s-3 26-8 26H20z" fill="url(#my64-cell-sleeve)" stroke="#576573"/>
+  <path d="M146 14h42c5 0 8 11 8 26s-3 26-8 26h-42z" fill="url(#my64-cell-copper)"/>
+  <path d="M184 14h4c5 0 8 11 8 26s-3 26-8 26h-4c4-6 6-15 6-26s-2-20-6-26z" fill="url(#my64-cell-metal)"/>
+  <path d="M20 14h7c4 6 6 15 6 26s-2 20-6 26h-7z" fill="url(#my64-cell-metal)"/>
+  <ellipse cx="20" cy="40" rx="6" ry="26" fill="url(#my64-cell-metal)" stroke="#65727a"/>
+  <path d="M35 22h143" stroke="#fff" stroke-opacity=".22" stroke-width="2" stroke-linecap="round"/>
+  <path d="M47 40h12" stroke="#f1f5f9" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M160 40h13m-6.5-6.5v13" stroke="#22170f" stroke-width="2.4" stroke-linecap="round"/>
+  <circle data-battery-contact="minus" cx="14" cy="40" r=".8" fill="transparent"/>
+  <circle data-battery-contact="plus" cx="209" cy="40" r=".8" fill="transparent"/>
+</svg>
+  </div>
+  <svg class="interactive-wires-svg" id="wiresSvg" aria-hidden="true">
+    <defs>
+      <filter id="wireShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#000" flood-opacity="0.72" />
+      </filter>
+    </defs>
+
+    <!-- Гибкий чёрный провод -->
+    <path id="blackCableOuter" d="" fill="none" stroke="#181a1e" stroke-width="6" stroke-linecap="round" filter="url(#wireShadow)" />
+    <path id="blackCableShine" d="" fill="none" stroke="#495057" stroke-width="1.4" stroke-linecap="round" />
+
+    <!-- Гибкий красный провод -->
+    <path id="redCableOuter" d="" fill="none" stroke="#c92a2a" stroke-width="6" stroke-linecap="round" filter="url(#wireShadow)" />
+    <path id="redCableShine" d="" fill="none" stroke="#ff8787" stroke-width="1.4" stroke-linecap="round" />
+
+    <!-- Чёрный штекер в гнезде мультиметра -->
+    <g id="blackPlugNode" filter="url(#wireShadow)">
+      <circle r="24" fill="transparent" aria-hidden="true" />
+      <!-- Металлический штырёк «банан» (виден только когда штекер ВЫНУТ из гнезда) -->
+      <rect id="blackPlugPin" x="-3" y="-22" width="6" height="12" rx="2" fill="#ced4da" stroke="#495057" stroke-width="1" style="display:none;" />
+      <circle cx="0" cy="0" r="14" fill="#212529" stroke="#6c757d" stroke-width="2.4" />
+      <circle cx="0" cy="0" r="5.5" fill="#0b0c0e" />
+    </g>
+
+    <!-- Красный штекер в гнезде мультиметра -->
+    <g id="redPlugNode" filter="url(#wireShadow)">
+      <circle r="24" fill="transparent" aria-hidden="true" />
+      <!-- Металлический штырёк «банан» (виден только когда штекер ВЫНУТ из гнезда) -->
+      <rect id="redPlugPin" x="-3" y="-22" width="6" height="12" rx="2" fill="#ced4da" stroke="#495057" stroke-width="1" style="display:none;" />
+      <circle cx="0" cy="0" r="14" fill="#d92626" stroke="#ffa8a8" stroke-width="2.4" />
+      <circle cx="0" cy="0" r="5.5" fill="#5c0b0b" />
+    </g>
+    <g id="blackBatteryProbe">
+      <path d="M0 0h-12" stroke="#cbd5e1" stroke-width="2"/>
+      <path d="M-12 0h-25" stroke="#6c757d" stroke-width="9" stroke-linecap="round"/>
+      <path d="M-13 0h-24" stroke="#24292e" stroke-width="6" stroke-linecap="round"/>
+    </g>
+    <g id="redBatteryProbe">
+      <path d="M0 0h-12" stroke="#cbd5e1" stroke-width="2"/>
+      <path d="M-12 0h-25" stroke="#ffa8a8" stroke-width="9" stroke-linecap="round"/>
+      <path d="M-13 0h-24" stroke="#cf2828" stroke-width="6" stroke-linecap="round"/>
+    </g>
+  </svg>
+</div>
+</template>
+        <figcaption>MY64 с щупами на контактах батарейки. Плоский торец слева — минус, выступ справа — плюс.</figcaption>
+      </figure>
+      <div class="panel-copy">
+        <dl>
+          <dt>ON/OFF и дисплей</dt>
+          <dd>Кнопка включает прибор. Дисплей показывает число, знак и положение точки. Единицу определяйте по выбранному режиму и пределу.</dd>
+          <dt>Переключатель</dt>
+          <dd>Буква указывает величину, а число в секторе задаёт предел. Например, «20» в секторе V⎓ означает предел постоянного напряжения 20 В.</dd>
+          <dt>Гнёзда</dt>
+          <dd>Чёрный штекер обычно в COM. Красный вставляйте в VΩHz для напряжения, сопротивления, диода и прозвонки. Гнёзда mA и 10A предназначены для тока.</dd>
+        </dl>
+        <div>
+          <h3>Измерьте батарейку на разных пределах</h3>
+          <p>Чёрный щуп на минусе батарейки, красный на плюсе. Выберите предел в секторе V⎓.</p>
+          <div class="controls" role="group" aria-label="Показания одной батарейки">
+            <button type="button" data-reading="wide" aria-pressed="true">20 В</button>
+            <button type="button" data-reading="best" aria-pressed="false">2 В</button>
+            <button type="button" data-reading="narrow" aria-pressed="false">200 мВ</button>
+            <button type="button" data-reading="reverse" aria-pressed="false">Щупы наоборот, 2 В</button>
+          </div>
+          <p id="panel-result" class="callout" aria-live="polite"><strong>1,56 В.</strong> Младший разряд 0,01 В.</p>
+          <p>Одиночная <span class="reading">1</span> слева в режиме напряжения означает перегрузку. Выберите больший предел. Для более подробного отсчёта переходите на меньший подходящий предел.</p>
+          <noscript><p>На 2 В показание 1,563 В, на 200 мВ — перегрузка. После перестановки щупов на 2 В получится −1,563 В.</p></noscript>
+        </div>
+        <div id="mode-controls" hidden>
+          <h3>Найдите на панели нужные гнёзда и сектор</h3>
+          <div class="controls" role="group" aria-label="Подсветка панели по режимам">
+            <button type="button" data-mode="voltage" aria-pressed="true">Напряжение</button>
+            <button type="button" data-mode="current" aria-pressed="false">Ток</button>
+            <button type="button" data-mode="ohm" aria-pressed="false">Сопротивление</button>
+            <button type="button" data-mode="cont" aria-pressed="false">Диод и прозвонка</button>
+          </div>
+          <p id="mode-result" aria-live="polite">Для напряжения используйте секторы V⎓ или V~ и пару гнёзд COM и VΩHz.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card" id="voltage">
+    <h2>Напряжение измеряют между двумя точками</h2>
+    <div class="grid">
+      <div>
+        <ol>
+          <li>Вставьте чёрный штекер в <b>COM</b>, красный в <b>VΩHz</b>.</li>
+          <li>Выберите <b>V⎓</b> для батарейки или <b>V~</b> для переменного напряжения. Если значение неизвестно, начните с большого подходящего предела.</li>
+          <li>Коснитесь щупами двух точек, между которыми измеряете напряжение. Цепь нагрузки остаётся замкнутой.</li>
+          <li>Запишите число с единицей и пределом. Для синусоидального источника на стенде в режиме V~ отсчитывают действующее напряжение.</li>
+        </ol>
+      </div>
+      <figure>
+        <svg class="schematic" viewBox="0 0 340 172" role="img" aria-label="Вольтметр подключён параллельно резистору">
+          <path class="wire" d="M35 67V36H145M198 36H305V137H35V91M17 67H53M25 81H45M35 81V91"/>
+          <rect class="component" x="145" y="25" width="53" height="22"/>
+          <text x="165" y="19">R</text><text x="14" y="57">+</text>
+          <path class="wire red" d="M112 36v63h37"/><path class="wire black" d="M193 99h37V36"/>
+          <circle class="component" cx="171" cy="99" r="22"/><text x="165" y="105">V</text>
+          <circle class="node" cx="112" cy="36" r="4"/><circle class="node" cx="230" cy="36" r="4"/>
+          <text x="62" y="91">VΩHz</text><text x="238" y="91">COM</text>
+        </svg>
+        <figcaption>Напряжение снимают с двух концов нагрузки. Для измерения на батарейке щупы ставят прямо на её выводы.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="card" id="current">
+    <h2>Ток измеряют в разрыве цепи</h2>
+    <div class="grid">
+      <div>
+        <ol>
+          <li><b>Обесточьте цепь.</b> Разомкните провод в указанном месте.</li>
+          <li>Чёрный штекер оставьте в <b>COM</b>. При известном токе до 200 мА используйте <b>mA</b> и начните с 200 мА. Если ожидается ток больше 200 мА и в пределах учебного входа 10 А, используйте <b>10A</b> и положение 10.</li>
+          <li>Выберите <b>A⎓</b> для постоянного тока или <b>A~</b> для переменного. Подключите щупы к двум сторонам разрыва, затем подайте питание.</li>
+          <li>Запишите отсчёт. Перед изменением подключения снимите питание. После измерения выньте щупы из цепи и верните красный штекер в <b>VΩHz</b>.</li>
+        </ol>
+      </div>
+      <figure>
+        <svg class="schematic" viewBox="0 0 340 164" role="img" aria-label="Амперметр включён в разрыв между источником и резистором">
+          <path class="wire" d="M35 81V59H81M181 59h43m53 0h28v79H35v-33M17 81H53M25 95H45M35 95v10"/>
+          <path class="wire red" d="M81 59h34"/><path class="wire black" d="M159 59h22"/>
+          <circle class="component" cx="137" cy="59" r="22"/><text x="131" y="65">A</text>
+          <rect class="component" x="224" y="48" width="53" height="22"/>
+          <text x="246" y="42">R</text><text x="14" y="72">+</text>
+          <text x="64" y="98">mA / 10A</text><text x="158" y="98">COM</text>
+        </svg>
+        <figcaption>Амперметр замыкает подготовленный разрыв. Через мультиметр и нагрузку течёт один ток.</figcaption>
+      </figure>
+    </div>
+    <p class="callout warning"><b>Токовый вход нельзя подключать к двум выводам источника.</b> Это может вызвать короткое замыкание. В заданиях используются изолированные низковольтные источники.</p>
+    <p>При смене токового предела показание может немного измениться: мультиметр добавляет в цепь своё сопротивление, и на разных пределах оно различается.</p>
+  </section>
+
+  <section class="card" id="resistance">
+    <h2>Сопротивление измеряют без питания</h2>
+    <div class="grid">
+      <div>
+        <ol>
+          <li>Отключите питание и разрядите конденсаторы. Если резистор соединён с другими деталями, для измерения сопротивления самого резистора отсоедините хотя бы один его вывод.</li>
+          <li>Выберите <b>Ω</b>. Подключите <b>COM</b> и <b>VΩHz</b> к разным выводам резистора.</li>
+          <li>Уменьшайте предел, пока экран показывает число без перегрузки. Например, на 20 кОм показание <span class="reading">4.70</span> означает 4,70 кОм, или 4700 Ом.</li>
+        </ol>
+        <p>У омметра одиночная <span class="reading">1</span> слева может означать слишком малый предел, разрыв цепи или отсутствие контакта щупа.</p>
+      </div>
+      <figure>
+        <svg class="schematic" viewBox="0 0 340 144" role="img" aria-label="Омметр подключён к выводам отдельного резистора">
+          <path class="wire red" d="M148 38H62v65h81"/><path class="wire black" d="M192 38h86v65h-81"/>
+          <circle class="component" cx="170" cy="38" r="22"/><text x="163" y="44">Ω</text>
+          <rect class="component" x="143" y="92" width="54" height="22"/>
+          <text x="76" y="29">VΩHz</text><text x="224" y="29">COM</text>
+          <text x="165" y="134">R</text>
+        </svg>
+        <figcaption>Омметр подаёт свой испытательный ток. Внешний источник отключён.</figcaption>
+      </figure>
+    </div>
+    <details>
+      <summary>Предел 200 МОм и паспортная погрешность</summary>
+      <p>На пределе 200 МОм у описанного в руководстве исполнения MY64 отсчёт при замкнутых щупах составляет 1,0 МОм. Его вычитают из показания на этом пределе. Если экран показывает 101,0 МОм, результат равен 100,0 МОм.</p>
+      <p>Шаг младшего разряда показывает, насколько мелкое изменение видно на дисплее. Паспортную границу погрешности для нужного предела ищите в руководстве. Если она дана в виде ±(a % показания + b отсчётов), умножьте число отсчётов b на шаг младшего разряда и прибавьте a % модуля показания.</p>
+    </details>
+  </section>
+
+  <section class="card" id="components">
+    <h2>Диод и прозвонка</h2>
+    <div class="grid">
+      <div>
+        <p>Выберите положение со значком диода. Чёрный штекер — в <b>COM</b>, красный — в <b>VΩHz</b>. Образцы проверяйте без питания.</p>
+        <h3>Диод</h3>
+        <p>Подайте красный щуп на анод, чёрный на катод. Пример показания <span class="reading">625</span> означает прямое падение 625 мВ, или 0,625 В. Поменяйте щупы местами: у обычного исправного кремниевого диода на стенде появится одиночная <span class="reading">1</span>.</p>
+        <h3>Прозвонка</h3>
+        <p>Коснитесь концов проводника. Звук означает малое сопротивление, при обрыве звука нет. В учебной модели сигнал срабатывает при сопротивлении измерительной цепи ниже 50 Ом. Для измерения сопротивления используйте сектор Ω.</p>
+      </div>
+      <figure>
+        <svg class="schematic" viewBox="0 0 340 106" role="img" aria-label="Красный щуп подключён к аноду, чёрный к катоду диода">
+          <path class="wire red" d="M43 50h103"/><path class="wire black" d="M175 50h122"/>
+          <path class="component" d="M146 34v32l27-16zM175 33v34"/>
+          <circle cx="43" cy="50" r="4" fill="#a92529"/><circle class="node" cx="297" cy="50" r="4"/>
+          <text x="18" y="31">VΩHz</text><text x="272" y="31">COM</text>
+          <text x="110" y="88">анод</text><text x="189" y="88">катод</text>
+        </svg>
+        <figcaption>Черта в символе диода обозначает катод.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="card" id="notebook">
+    <h2>Запишите в тетрадь</h2>
+    <ol>
+      <li>Нарисуйте подключение вольтметра параллельно нагрузке, а амперметра — в разрыв.</li>
+      <li>Подпишите четыре гнезда MY64 и укажите назначение каждого.</li>
+      <li>Запишите пример с единицей и пределом. <b>U = 1,563 В = 1563 мВ, предел 2 В⎓.</b> Шаг младшего разряда — 0,001 В.</li>
+      <li>Запишите, что означает одиночная «1» в режимах V и Ω, когда нужно снять питание и куда вернуть красный штекер после измерения тока.</li>
+    </ol>
+    <a class="primary" href="practice.html">Открыть практику с 50 вариантами</a>
+  </section>
+</main>
+<footer>
+  Указания по подключению и характеристики изучаемого исполнения приведены в <a href="https://viva-telecom.org/SHOP/INSTRUCTION/MASTECH/my61-my62-my63-my64.pdf">руководстве MASTECH MY61–MY64</a>. При работе с физическим прибором сверяйтесь с маркировкой его корпуса и указаниями преподавателя.
+</footer>
+<script>
+  const panelHost = document.getElementById('meter-panel');
+  const panel = panelHost.attachShadow({ mode: 'open' });
+  panel.append(document.getElementById('meter-template').content.cloneNode(true));
+  const stage = panel.querySelector('.meter-stage');
+  const state = { dialIdx: 0 };
+
+  // START PRACTICE PANEL RENDERER
+  const DIAL_RANGES = [
+    // 1. Прозвонка и диоды (между двумя белыми линиями слева вверху)
+    { id: 'CONT',      label: '➔|-',   mode: 'CONT', max: 2000,   decimals: 0, scale: 1,     angle: -52,   anchor: 'end',    r: 86, dx: -1, dy: 0, isContIcon: true },
+
+    // 2. Сектор сопротивления Ω (равномерная верхняя дуга: шаг 11°, края внутри рамок сектора)
+    { id: 'OHM_200',   label: '200',   mode: 'OHM',  max: 200,    decimals: 1, scale: 1,     angle: -39,   anchor: 'middle', r: 91, dx: 2,  dy: -2 },
+    { id: 'OHM_2K',    label: '2k',    mode: 'OHM',  max: 2,      decimals: 3, scale: 0.001, angle: -28,   anchor: 'middle', r: 91, dx: 0,  dy: -2 },
+    { id: 'OHM_20K',   label: '20k',   mode: 'OHM',  max: 20,     decimals: 2, scale: 0.001, angle: -17,   anchor: 'middle', r: 92, dx: -1, dy: -2 },
+    { id: 'OHM_200K',  label: '200k',  mode: 'OHM',  max: 200,    decimals: 1, scale: 0.001, angle: -6,    anchor: 'middle', r: 93, dx: -2, dy: -2 },
+    { id: 'OHM_2M',    label: '2M',    mode: 'OHM',  max: 2,      decimals: 3, scale: 1e-6,  angle: 5.5,   anchor: 'middle', r: 93, dx: 2,  dy: -2 },
+    { id: 'OHM_20M',   label: '20M',   mode: 'OHM',  max: 20,     decimals: 2, scale: 1e-6,  angle: 16.5,  anchor: 'middle', r: 92, dx: 2,  dy: -2 },
+    { id: 'OHM_200M',  label: '200M',  mode: 'OHM',  max: 200,    decimals: 1, scale: 1e-6,  angle: 27.5,  anchor: 'middle', r: 92, dx: -1, dy: -3 },
+
+
+    // 4. Сектор постоянного напряжения V⎓ (справа вверху: 200m .. 1000)
+    { id: 'DCV_200M',  label: '200m',  mode: 'DCV',  max: 200,    decimals: 1, scale: 1000,  angle: 54.5,  anchor: 'start',  r: 85, dx: 1,  dy: -1 },
+    { id: 'DCV_2',     label: '2',     mode: 'DCV',  max: 2,      decimals: 3, scale: 1,     angle: 65,    anchor: 'start',  r: 85, dx: 1,  dy: 0 },
+    { id: 'DCV_20',    label: '20',    mode: 'DCV',  max: 20,     decimals: 2, scale: 1,     angle: 75.5,  anchor: 'start',  r: 85, dx: 1,  dy: 0 },
+    { id: 'DCV_200',   label: '200',   mode: 'DCV',  max: 200,    decimals: 1, scale: 1,     angle: 86,    anchor: 'start',  r: 85, dx: 1,  dy: 0 },
+    { id: 'DCV_1000',  label: '1000',  mode: 'DCV',  max: 1000,   decimals: 0, scale: 1,     angle: 96.5,  anchor: 'start',  r: 85, dx: 1,  dy: 0 },
+
+    // 5. Сектор переменного напряжения V~ (справа внизу: 700 .. 2)
+    { id: 'ACV_700',   label: '700',   mode: 'ACV',  max: 700,    decimals: 0, scale: 1,     angle: 109,   anchor: 'start',  r: 85, dx: 1,  dy: 1 },
+    { id: 'ACV_200',   label: '200',   mode: 'ACV',  max: 200,    decimals: 1, scale: 1,     angle: 119.5, anchor: 'start',  r: 85, dx: 1,  dy: 1 },
+    { id: 'ACV_20',    label: '20',    mode: 'ACV',  max: 20,     decimals: 2, scale: 1,     angle: 130,   anchor: 'start',  r: 85, dx: 1,  dy: 1 },
+    { id: 'ACV_2',     label: '2',     mode: 'ACV',  max: 2,      decimals: 3, scale: 1,     angle: 140.5, anchor: 'start',  r: 85, dx: 1,  dy: 1 },
+
+
+    // 7. Сектор ёмкости конденсаторов F (нижняя дуга: 2n .. 20μ)
+    { id: 'CAP_2N',    label: '2n',    mode: 'CAP',  max: 2,      decimals: 3, scale: 1,     angle: 178,   anchor: 'middle', r: 93, dx: -1, dy: 3 },
+    { id: 'CAP_20N',   label: '20n',   mode: 'CAP',  max: 20,     decimals: 2, scale: 1,     angle: 189,   anchor: 'middle', r: 93, dx: -1, dy: 3 },
+    { id: 'CAP_200N',  label: '200n',  mode: 'CAP',  max: 200,    decimals: 1, scale: 1,     angle: 200.5, anchor: 'middle', r: 94, dx: -2, dy: 3 },
+    { id: 'CAP_2U',    label: '2μ',    mode: 'CAP',  max: 2,      decimals: 3, scale: 1,     angle: 211.5, anchor: 'middle', r: 93, dx: -2, dy: 3 },
+    { id: 'CAP_20U',   label: '20μ',   mode: 'CAP',  max: 20,     decimals: 2, scale: 1,     angle: 222,   anchor: 'middle', r: 92, dx: 1,  dy: 4 },
+
+    // 8. Сектор переменного тока A~ (слева внизу: 20m, 200m, 10)
+    { id: 'ACA_20M',   label: '20m',   mode: 'ACA',  max: 20,     decimals: 2, scale: 1000,  angle: 233.5, anchor: 'end',    r: 85, dx: -1, dy: 2 },
+    { id: 'ACA_200M',  label: '200m',  mode: 'ACA',  max: 200,    decimals: 1, scale: 1000,  angle: 244,   anchor: 'end',    r: 85, dx: -1, dy: 1 },
+    { id: 'ACA_10',    label: '10',    mode: 'ACA',  max: 20,     decimals: 2, scale: 1,     angle: 254.5, anchor: 'end',    r: 85, dx: -1, dy: 1 },
+
+    // 9. Сектор постоянного тока A⎓ (слева: 10, 200m, 20m, 2m)
+    { id: 'DCA_10',    label: '10',    mode: 'DCA',  max: 20,     decimals: 2, scale: 1,     angle: 266,   anchor: 'end',    r: 85, dx: -1, dy: 0 },
+    { id: 'DCA_200M',  label: '200m',  mode: 'DCA',  max: 200,    decimals: 1, scale: 1000,  angle: 276.5, anchor: 'end',    r: 85, dx: -1, dy: 0 },
+    { id: 'DCA_20M',   label: '20m',   mode: 'DCA',  max: 20,     decimals: 2, scale: 1000,  angle: 287,   anchor: 'end',    r: 85, dx: -1, dy: 0 },
+    { id: 'DCA_2M',    label: '2m',    mode: 'DCA',  max: 2,      decimals: 3, scale: 1000,  angle: 297.5, anchor: 'end',    r: 85, dx: -1, dy: -1 }
+  ];
+
+  const SECTOR_DIVIDER_ANGLES = [-58, -45.5, 35, 48, 102.8, 146.5, 158.8, 171.5, 227.8, 260.2];
+
+  const SECTOR_HEADERS = [
+    { text: 'Ω',   angle: -27, r: 112, color: '#ffffff', size: 14   },
+    { text: 'V⎓',  angle: 66,  r: 120, color: '#ffffff', size: 12.5 },
+    { text: 'V~',  angle: 120, r: 120, color: '#ffffff', size: 12.5 },
+    { text: 'F',   angle: 201, r: 116, color: '#ffffff', size: 11.5 },
+    { text: 'A~',  angle: 238, r: 121, color: '#ffffff', size: 12.5 },
+    { text: 'A⎓',  angle: 285, r: 123, color: '#ffffff', size: 12.5 }
+  ];
+
+  const DIGIT_SEGMENTS = {
+    '0': [1,1,1,1,1,1,0],
+    '1': [0,1,1,0,0,0,0],
+    '2': [1,1,0,1,1,0,1],
+    '3': [1,1,1,1,0,0,1],
+    '4': [0,1,1,0,0,1,1],
+    '5': [1,0,1,1,0,1,1],
+    '6': [1,0,1,1,1,1,1],
+    '7': [1,1,1,0,0,0,0],
+    '8': [1,1,1,1,1,1,1],
+    '9': [1,1,1,1,0,1,1],
+    ' ': [0,0,0,0,0,0,0]
+  };
+
+  function drawSevenSegmentDisplay(cfg) {
+    const svg = panel.getElementById('lcdSvg');
+    const glass = panel.getElementById('lcdGlass');
+    glass.classList.toggle('off', !cfg.powered);
+
+    const ON = '#111810';
+    const OFF = 'rgba(17, 24, 16, 0.07)';
+
+    let out = '';
+
+    // Служебные индикаторы ЖК слева
+    out += `<text x="6" y="16" font-family="monospace" font-weight="900" font-size="11" fill="${(cfg.powered && cfg.ac) ? ON : OFF}">AC</text>`;
+    out += `<text x="6" y="31" font-family="monospace" font-weight="900" font-size="10" fill="${(cfg.powered && cfg.bat) ? ON : OFF}">BAT</text>`;
+    out += `<text x="6" y="46" font-family="monospace" font-weight="900" font-size="10" fill="${(cfg.powered && cfg.cont) ? ON : OFF}">➔|-</text>`;
+
+    // Сегмент знака МИНУС («-»)
+    const minusColor = (cfg.powered && cfg.minus) ? ON : OFF;
+    out += `<polygon points="40,33 58,33 60,36.5 58,40 40,40 38,36.5" fill="${minusColor}" />`;
+
+    // 4 семисегментных знакоместа (3.5 разряда: максимум 1999)
+    const xPositions = [68, 118, 170, 222];
+    for (let i = 0; i < 4; i++) {
+      const x = xPositions[i];
+      const ch = cfg.powered ? (cfg.digits[i] || ' ') : ' ';
+      const segs = DIGIT_SEGMENTS[ch] || DIGIT_SEGMENTS[' '];
+
+      const paths = [
+        `M ${x+7},6 L ${x+33},6 L ${x+29},12 L ${x+10},12 Z`,
+        `M ${x+34},7 L ${x+38},11 L ${x+35},33 L ${x+31},30 L ${x+30},13 Z`,
+        `M ${x+30},38 L ${x+34},35 L ${x+32},58 L ${x+27},62 L ${x+27},40 Z`,
+        `M ${x+7},57 L ${x+26},57 L ${x+29},63 L ${x+4},63 Z`,
+        `M ${x+3},36 L ${x+8},38 L ${x+7},56 L ${x+2},60 L ${x+2},38 Z`,
+        `M ${x+5},9 L ${x+10},13 L ${x+9},30 L ${x+4},33 L ${x+4},12 Z`,
+        `M ${x+9},31.5 L ${x+29},31.5 L ${x+32},35 L ${x+29},38 L ${x+8},38 L ${x+5},35 Z`
+      ];
+
+      for (let s = 0; s < 7; s++) {
+        if (i === 0 && s !== 1 && s !== 2) continue;
+        out += `<path d="${paths[s]}" fill="${segs[s] ? ON : OFF}" />`;
+      }
+
+      if (i < 3) {
+        const dotOn = cfg.powered && (cfg.dotPos === i + 1);
+        out += `<circle cx="${x + 43}" cy="60" r="3.5" fill="${dotOn ? ON : OFF}" />`;
+      }
+    }
+
+    if (svg.innerHTML !== out) svg.innerHTML = out;
+    svg.setAttribute('aria-label', cfg.powered ? 'Показание: ' + (cfg.text || '') : 'Мультиметр выключен');
+  }
+
+  function numberToLcdFormat(value, maxVal, decimals) {
+    const scaled = Math.abs(value) * 10 ** decimals;
+    const counts = Math.round(scaled + scaled * Number.EPSILON);
+    const overload = !Number.isFinite(value) || counts > 1999 || Math.abs(value) > maxVal;
+    if (overload) return {overload: true, minus: false, digits: ['1',' ',' ',' '], dotPos: 0};
+    const raw = counts.toString().padStart(decimals + 1, '0').padStart(4, ' ');
+    const minus = value < 0 && counts > 0;
+    // The first position on the 1999-count LCD can show only 1 or blank.
+    const leading = raw[0] === '1' ? '1' : ' ';
+    return {overload: false, minus, digits: [leading, ...raw.slice(1)],
+      dotPos: decimals ? 4 - decimals : 0, rounded: (minus ? -counts : counts) / 10 ** decimals};
+  }
+
+  function polarToXY(cx, cy, r, clockDeg) {
+    const rad = (clockDeg - 90) * Math.PI / 180;
+    return {
+      x: cx + r * Math.cos(rad),
+      y: cy + r * Math.sin(rad)
+    };
+  }
+
+  function renderDialScale() {
+    const layer = panel.getElementById('dialScaleLayer');
+    const cx = 157, cy = 136;
+    const dotR = 78.5;
+    let html = '';
+
+    // 1. Белые радиальные линии границ секторов как на оригинале MY64
+    SECTOR_DIVIDER_ANGLES.forEach(ang => {
+      const p1 = polarToXY(cx, cy, 74.5, ang);
+      const p2 = polarToXY(cx, cy, 98.5, ang);
+      html += `<line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1.35" />`;
+    });
+
+    // 2. Символы секторов (Ω, V⎓, V~, Hz, F, A~, A⎓) рядом со своими пределами
+    SECTOR_HEADERS.forEach(sh => {
+      const p = polarToXY(cx, cy, sh.r, sh.angle);
+      html += `<text x="${p.x.toFixed(1)}" y="${(p.y + 4).toFixed(1)}" text-anchor="middle" fill="${sh.color}" font-size="${sh.size}" font-weight="900">${sh.text}</text>`;
+    });
+
+    // 3. Все 32 позиции с белыми точками и выверенными подписями без наездов на линии
+    DIAL_RANGES.forEach((item, idx) => {
+      const dPt = polarToXY(cx, cy, dotR, item.angle);
+      const tPt = polarToXY(cx, cy, item.r, item.angle);
+      const tx = tPt.x + (item.dx || 0);
+      const ty = tPt.y + 3 + (item.dy || 0);
+      const hitPt = polarToXY(cx, cy, 86, item.angle);
+
+      const isCurrent = (idx === state.dialIdx);
+
+      if (item.isContIcon) {
+        // Заводская шелкография значка прозвонки и диода (нота + диод)
+        const ix = tx - 22;
+        const iy = ty - 7;
+        html += `
+          <g class="dial-pos-hit" data-range="${item.id}">
+            <circle cx="${hitPt.x.toFixed(1)}" cy="${hitPt.y.toFixed(1)}" r="11" fill="transparent" />
+            <circle class="dial-pos-dot ${isCurrent ? 'active' : ''}" cx="${dPt.x.toFixed(1)}" cy="${dPt.y.toFixed(1)}" r="2.2" />
+            <g class="cont-icon-group ${isCurrent ? 'active' : ''}" transform="translate(${ix.toFixed(1)}, ${iy.toFixed(1)})">
+              <!-- Двойная восьмая нота (пищалка) -->
+              <ellipse cx="2.2" cy="7.5" rx="1.6" ry="1.2" />
+              <ellipse cx="6.8" cy="6.8" rx="1.6" ry="1.2" />
+              <path d="M 3.4,7.2 L 3.4,1.5 L 8.0,0.8 L 8.0,6.5" fill="none" stroke-width="1.1" />
+              <!-- Значок диода ➔|- -->
+              <line x1="10.5" y1="4.5" x2="19.5" y2="4.5" stroke-width="1.2" />
+              <polygon points="13.2,2.2 13.2,6.8 16.8,4.5" />
+              <line x1="17.2" y1="2.0" x2="17.2" y2="7.0" stroke-width="1.3" />
+            </g>
+          </g>
+        `;
+      } else {
+        html += `
+          <g class="dial-pos-hit" data-range="${item.id}">
+            <circle cx="${hitPt.x.toFixed(1)}" cy="${hitPt.y.toFixed(1)}" r="11" fill="transparent" />
+            <circle class="dial-pos-dot ${isCurrent ? 'active' : ''}" cx="${dPt.x.toFixed(1)}" cy="${dPt.y.toFixed(1)}" r="2.2" />
+            <text class="dial-pos-text ${isCurrent ? 'active' : ''}"
+                  x="${tx.toFixed(1)}" y="${ty.toFixed(1)}"
+                  text-anchor="${item.anchor}">${item.label}</text>
+          </g>
+        `;
+      }
+    });
+
+    layer.innerHTML = html;
+    const activeRange = DIAL_RANGES[state.dialIdx];
+    panel.getElementById('rotaryTurntable').setAttribute('transform', `rotate(${activeRange.angle}, 157, 136)`);
+  }
+  // END PRACTICE PANEL RENDERER
+
+  const readings = {
+    wide: { range: 'DCV_20', volts: 1.563, result: '1,56 В. Младший разряд 0,01 В.' },
+    best: { range: 'DCV_2', volts: 1.563, result: '1,563 В. Младший разряд 0,001 В.' },
+    narrow: { range: 'DCV_200M', volts: 1.563, result: 'Перегрузка. Вернитесь на предел 2 В.' },
+    reverse: { range: 'DCV_2', volts: -1.563, result: '−1,563 В. Красный щуп теперь на минусе батарейки, чёрный — на плюсе.' }
+  };
+  const rangeButtons = document.querySelectorAll('[data-reading]');
+  const panelResult = document.getElementById('panel-result');
+  const modeButtons = document.querySelectorAll('[data-mode]');
+  const modeResult = document.getElementById('mode-result');
+  const modes = {
+    voltage: { sectors: ['DCV', 'ACV'], red: 'VO', range: 'DCV_20', detail: 'Для напряжения используйте секторы V⎓ или V~ и пару гнёзд COM и VΩHz.' },
+    current: { sectors: ['DCA', 'ACA'], red: 'mA', range: 'DCA_200M', detail: 'Для тока используйте секторы A⎓ или A~. Чёрный штекер в COM. Красный показан в mA. Для тока более 200 мА выберите 10A в пределах этого входа.' },
+    ohm: { sectors: ['OHM'], red: 'VO', range: 'OHM_20K', detail: 'Для сопротивления выберите сектор Ω. Щупы подключите к COM и VΩHz.' },
+    cont: { sectors: ['CONT'], red: 'VO', range: 'CONT', detail: 'Для диода и прозвонки выберите положение со значком диода. Щупы подключите к COM и VΩHz.' },
+  };
+  let modeKey = 'voltage';
+  let readingKey = 'wide';
+  let powered = true;
+
+  function centerOnStage(node, stageRect, scale) {
+    const box = node.getBoundingClientRect();
+    return {
+      x: Math.round((box.left + box.width / 2 - stageRect.left) / scale * 100) / 100,
+      y: Math.round((box.top + box.height / 2 - stageRect.top) / scale * 100) / 100,
+    };
+  }
+
+  function layoutMeter() {
+    const scale = panelHost.clientWidth / stage.offsetWidth;
+    stage.style.transform = `scale(${scale})`;
+    panelHost.style.height = `${Math.ceil(stage.offsetHeight * scale)}px`;
+    if (!scale) return;
+    const stageRect = stage.getBoundingClientRect();
+    const redJack = modes[modeKey].red;
+    [['black', redJack && 'COM'], ['red', redJack]].forEach(([color, jack]) => {
+      const plug = panel.getElementById(color + 'PlugNode');
+      const outer = panel.getElementById(color + 'CableOuter');
+      const shine = panel.getElementById(color + 'CableShine');
+      const probe = panel.getElementById(color + 'BatteryProbe');
+      probe.style.display = readingKey ? '' : 'none';
+      for (const node of [plug, outer, shine]) node.style.display = jack ? '' : 'none';
+      if (!jack) return;
+      const { x, y } = centerOnStage(panel.getElementById('jack_' + jack), stageRect, scale);
+      plug.setAttribute('transform', `translate(${x}, ${y})`);
+      let cable;
+      if (readingKey) {
+        const positive = (color === 'red') !== (readingKey === 'reverse');
+        const contact = panel.querySelector(`[data-battery-contact="${positive ? 'plus' : 'minus'}"]`);
+        const tip = centerOnStage(contact, stageRect, scale);
+        const direction = positive ? -1 : 1;
+        const grip = tip.x - 36 * direction;
+        probe.setAttribute('transform', `translate(${tip.x} ${tip.y}) scale(${direction} 1)`);
+        cable = `M ${x} ${y + 10} C ${x} ${y + 110}, ${grip - direction * 62} ${tip.y - 85}, ${grip} ${tip.y}`;
+      } else {
+        const endpoint = Math.min(stage.offsetHeight - 3, y + (color === 'black' ? 112 : 92));
+        cable = `M ${x} ${y + 10} C ${x + 9} ${y + 88}, ${x + 72} ${endpoint - 10}, ${stage.offsetWidth + 4} ${endpoint}`;
+      }
+      outer.setAttribute('d', cable);
+      shine.setAttribute('d', cable);
+    });
+  }
+
+  function renderMeter() {
+    const mode = modes[modeKey];
+    const reading = readingKey ? readings[readingKey] : null;
+    panel.getElementById('batteryDemo').hidden = !reading;
+    state.dialIdx = DIAL_RANGES.findIndex(range => range.id === (reading?.range || mode.range));
+    const range = DIAL_RANGES[state.dialIdx];
+    renderDialScale();
+    if (!reading) {
+      DIAL_RANGES.forEach(item => {
+        const tick = panel.querySelector(`[data-range="${item.id}"]`);
+        tick.classList.toggle('demo-highlight', mode.sectors.includes(item.mode));
+      });
+    }
+    panel.querySelectorAll('[data-jack]').forEach(jack => {
+      const connected = mode.red && ['COM', mode.red].includes(jack.dataset.jack);
+      jack.classList.toggle('plugged', Boolean(connected));
+      jack.classList.toggle('demo-highlight', !reading && (Boolean(connected) || modeKey === 'current' && jack.dataset.jack === '10A'));
+    });
+    const lcd = reading
+      ? numberToLcdFormat(reading.volts * range.scale, range.max, range.decimals)
+      : { digits: [], dotPos: 0 };
+    drawSevenSegmentDisplay({ ...lcd, powered, text: reading?.result || 'образец не подключён' });
+    const powerButton = panel.getElementById('powerBtn');
+    powerButton.classList.toggle('pressed', powered);
+    powerButton.setAttribute('aria-pressed', String(powered));
+    modeButtons.forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mode === modeKey)));
+    rangeButtons.forEach(button => button.setAttribute('aria-pressed', String(powered && button.dataset.reading === readingKey)));
+    modeResult.textContent = mode.detail;
+    panelResult.textContent = !powered
+      ? 'Мультиметр выключен. Нажмите ON/OFF или выберите предел для опыта с батарейкой.'
+      : reading?.result || 'Выберите предел в опыте с батарейкой, чтобы снова увидеть показание.';
+    layoutMeter();
+  }
+
+  document.getElementById('mode-controls').hidden = false;
+  panel.getElementById('powerBtn').addEventListener('click', () => {
+    powered = !powered;
+    renderMeter();
+  });
+  modeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      modeKey = button.dataset.mode;
+      readingKey = null;
+      renderMeter();
+    });
+  });
+  rangeButtons.forEach(button => {
+    button.addEventListener('click', () => {
+      modeKey = 'voltage';
+      readingKey = button.dataset.reading;
+      powered = true;
+      renderMeter();
+    });
+  });
+  renderMeter();
+  new ResizeObserver(layoutMeter).observe(panelHost, { box: 'border-box' });
+</script>
+</body>
+</html>
